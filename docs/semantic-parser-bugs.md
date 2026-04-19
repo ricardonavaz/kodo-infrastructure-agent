@@ -112,3 +112,23 @@ These are NOT bugs to fix now — they document current behavior for future work
 - **Expected behavior:** Current behavior is reasonable as a conservative filter. However, metrics embedded in tables or code blocks are handled by their respective detectors first (higher priority), so this only catches standalone metric lines.
 - **Priority:** Baja
 - **Note:** Documentado en Paso A3.1. Resolucion planificada post-RRL.
+
+---
+
+## 12. question_prompt endsWith fails with markdown bold
+
+- **Lines:** 197
+- **Current behavior:** `endsWith('?')` fails when question ends in "**?**" because the string literally ends in "**", not "?". question_prompt is never generated for bold-formatted questions.
+- **Expected behavior:** Strip markdown bold before checking endsWith, or regex-match `/\?\s*\*?\*?\s*$/`.
+- **Priority:** Alta — detected in smoke test 2026-04-19
+- **Note:** Fix prepared for sprint B0.
+
+---
+
+## 13. extractOptions breaks on blank line between question and options
+
+- **Lines:** ~365-375
+- **Current behavior:** extractOptions stops iterating when it hits a blank line, so questions formatted with "Responde:\n\n- SI..." (natural style) fail to find options. Defaults are used.
+- **Expected behavior:** Skip blank lines and "prompt lines" (Responde:, Options:, etc.) before starting to collect options.
+- **Priority:** Alta — detected in smoke test 2026-04-19
+- **Note:** Fix prepared for sprint B0. This and bug #12 often occur together.
