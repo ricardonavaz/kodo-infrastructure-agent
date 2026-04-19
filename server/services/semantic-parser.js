@@ -322,6 +322,7 @@ export function parseSemanticBlocks(text, executions = []) {
 
 // ======================== HELPERS ========================
 
+/** @internal Flush accumulated metrics buffer into a single metric_block. */
 function flushMetrics(blocks, buffer) {
   if (buffer.length === 0) return;
   blocks.push({
@@ -336,7 +337,8 @@ function flushMetrics(blocks, buffer) {
   buffer.length = 0;
 }
 
-function parseTable(lines) {
+/** @internal Parse markdown table lines into { headers, rows } or null. */
+export function parseTable(lines) {
   if (lines.length < 2) return null;
   const headerLine = lines[0];
   // Skip separator line (|---|---|)
@@ -354,7 +356,8 @@ function parseTable(lines) {
   return { headers, rows };
 }
 
-function extractOptions(lines, startIndex) {
+/** @internal Extract list-style options from lines starting at startIndex. Max 10. */
+export function extractOptions(lines, startIndex) {
   const options = [];
   let j = startIndex;
   while (j < lines.length && options.length < 10) {
@@ -372,7 +375,8 @@ function extractOptions(lines, startIndex) {
   return options;
 }
 
-function extractMetricsFromLine(line) {
+/** @internal Extract metric {label, value, unit, status, threshold} objects from a text line. */
+export function extractMetricsFromLine(line) {
   const metrics = [];
   // Pattern: "Label: Value Unit" or "**Label:** Value Unit"
   const patterns = [
@@ -402,7 +406,8 @@ function extractMetricsFromLine(line) {
   return metrics;
 }
 
-function detectSeverity(text) {
+/** @internal Detect severity level from keywords and emojis in text. */
+export function detectSeverity(text) {
   const lower = text.toLowerCase();
   for (const [keyword, severity] of Object.entries(SEVERITY_MAP)) {
     if (lower.includes(keyword)) return severity;
@@ -413,7 +418,8 @@ function detectSeverity(text) {
   return 'medium';
 }
 
-function detectOverallStatus(text) {
+/** @internal Detect overall response status from keywords in full text. */
+export function detectOverallStatus(text) {
   const lower = text.toLowerCase();
   if (/\b(critico|critical|peligro|grave)\b/.test(lower)) return 'critical';
   if (/\b(advertencia|warning|atencion|cuidado)\b/.test(lower)) return 'warning';
@@ -421,7 +427,8 @@ function detectOverallStatus(text) {
   return 'info';
 }
 
-function detectTags(text) {
+/** @internal Detect topic tags from pattern matching against full text. */
+export function detectTags(text) {
   const tags = [];
   for (const [tag, pattern] of Object.entries(TAG_PATTERNS)) {
     if (pattern.test(text)) tags.push(tag);
