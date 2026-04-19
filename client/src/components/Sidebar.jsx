@@ -79,6 +79,13 @@ export default function Sidebar({
         <div className="sidebar-logo">
           <span className="logo-kodo">Kodo</span>
           <span>Infrastructure Agent</span>
+          <span
+            className="sidebar-version"
+            onClick={() => { navigator.clipboard.writeText(__APP_COMMIT__); }}
+            title={`Build ${__APP_BUILD_DATE__} — click para copiar hash`}
+          >
+            v{__APP_VERSION__}-{__APP_COMMIT__}
+          </span>
         </div>
         <div className="sidebar-actions">
           {currentUser?.role === 'admin' && (
