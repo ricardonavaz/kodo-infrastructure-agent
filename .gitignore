@@ -1,0 +1,11 @@
+node_modules/
+client/dist/
+client/node_modules/
+server/kodo.db
+server/kodo.db-wal
+server/kodo.db-shm
+server/backups/
+.DS_Store
+*.log
+.env
+.vite/
