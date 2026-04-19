@@ -22,6 +22,9 @@ const MODEL_COSTS = {
   'claude-opus-4-20250514': { input: 0.015, output: 0.075 },
 };
 
+const HISTORY_WINDOW_SIZE = 20;
+const MAX_TOOL_ITERATIONS = 10;
+
 function estimateCost(model, inputTokens, outputTokens) {
   const costs = MODEL_COSTS[model] || MODEL_COSTS['claude-sonnet-4-20250514'];
   return ((inputTokens / 1000) * costs.input + (outputTokens / 1000) * costs.output).toFixed(6);
@@ -76,6 +79,115 @@ ESTRUCTURA OBLIGATORIA de cada respuesta:
 
 CONTEXTO: Estás conectado al servidor del usuario vía SSH. El sistema operativo es: {os_type}.`;
 
+/**
+ * Build the server-specific context string from profile, knowledge, and directives.
+ * Pure function — receives resolved data, does not query the DB.
+ * @param {string} osType - 'linux' or 'windows'
+ * @param {object|null} profile - server profile from getProfile()
+ * @param {string} knowledgeContext - result of getKnowledgeForPrompt()
+ * @param {string} directivesContext - result of getDirectivesForPrompt()
+ * @returns {string}
+ */
+export function buildServerContext(osType, profile, knowledgeContext, directivesContext) {
+  let context = '';
+
+  if (profile) {
+    context += `\n\nPERFIL DEL SERVIDOR:
+- OS: ${profile.os_version || profile.distro || profile.os_family || 'desconocido'}
+- Familia OS: ${profile.os_family || 'desconocido'}
+- Distro: ${profile.distro || 'N/A'}
+- Kernel: ${profile.kernel_version || 'N/A'}
+- Arch: ${profile.arch || 'N/A'}
+- CPU: ${profile.cpu_info || 'N/A'}
+- RAM: ${profile.total_memory_mb ? profile.total_memory_mb + ' MB' : 'N/A'}
+- Disco: ${profile.total_disk_mb ? profile.total_disk_mb + ' MB' : 'N/A'}
+- Package Manager: ${profile.package_manager || 'N/A'}
+- Shell: ${profile.shell_version || 'N/A'}
+- Init System: ${profile.init_system || 'N/A'}
+- Rol: ${profile.role || 'no definido'}
+${profile.custom_notes ? '- Notas: ' + profile.custom_notes : ''}
+Usa el package manager correcto (${profile.package_manager}) y adapta los comandos a este SO especifico.`;
+
+    // PowerShell version-specific rules
+    if (profile.os_family === 'windows' && profile.shell_version) {
+      const psMajor = parseInt(profile.shell_version);
+      context += `\n\nVERSION DE POWERSHELL: ${profile.shell_version}`;
+      if (psMajor >= 7) {
+        context += `\nEste servidor tiene PowerShell 7+. Usa cmdlets modernos: Get-CimInstance, Invoke-RestMethod, ConvertTo-Json. Puedes usar operador ternario (?:), null-coalescing (??), pipeline parallelism (ForEach-Object -Parallel). Evita Get-WmiObject (deprecado).`;
+      } else if (psMajor >= 5) {
+        context += `\nEste servidor tiene PowerShell 5.x (Windows PowerShell). Get-CimInstance disponible y preferido. Get-WmiObject funciona pero es legacy. NO uses sintaxis de PS7: operador ternario (?:), null-coalescing (??), ForEach-Object -Parallel. Usa if/else en su lugar.`;
+      } else if (psMajor >= 3) {
+        context += `\nEste servidor tiene PowerShell 3.x/4.x. Usa Get-CimInstance cuando sea posible, pero Get-WmiObject es mas confiable. No uses Invoke-RestMethod avanzado. Sintaxis basica solamente.`;
+      } else {
+        context += `\nEste servidor tiene PowerShell legacy (2.x o anterior). SOLO usa Get-WmiObject, NO Get-CimInstance. No uses ConvertTo-Json, Invoke-RestMethod, ni cmdlets modernos. Usa .NET classes directamente cuando sea necesario. Comandos simples solamente.`;
+      }
+    }
+
+    // Bash version context for Linux
+    if (profile.os_family !== 'windows' && profile.shell_version && profile.shell_version !== 'unknown') {
+      context += `\n\nVERSION DE BASH: ${profile.shell_version}`;
+    }
+  }
+
+  if (knowledgeContext) context += knowledgeContext;
+  if (directivesContext) context += directivesContext;
+
+  return context;
+}
+
+/**
+ * Build the system content blocks array with cache_control for prompt caching.
+ * Single breakpoint: SYSTEM_PROMPT + serverContext concatenated.
+ * @param {string} osType - 'linux' or 'windows'
+ * @param {string} serverContext - result of buildServerContext()
+ * @returns {Array} content blocks for the system parameter
+ */
+export function buildSystemBlocks(osType, serverContext) {
+  const basePrompt = SYSTEM_PROMPT.replace('{os_type}', osType || 'linux');
+  const fullText = serverContext ? basePrompt + serverContext : basePrompt;
+
+  return [
+    {
+      type: 'text',
+      text: fullText,
+      cache_control: { type: 'ephemeral' },
+    },
+  ];
+}
+
+/**
+ * Build the tools array with cache_control on the last tool for prompt caching.
+ * @returns {Array} tools with cache_control on the last element
+ */
+export function buildCachedTools() {
+  return [
+    {
+      name: 'execute_command',
+      description: 'Ejecuta un comando en el servidor remoto via SSH.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          command: { type: 'string', description: 'El comando a ejecutar en el servidor' },
+        },
+        required: ['command'],
+      },
+    },
+    {
+      name: 'query_server_history',
+      description: 'Consulta la bitacora de eventos del servidor. Usa esto cuando el usuario pregunte sobre el historial de acciones, que se hizo antes, cuando fue la ultima actualizacion, etc.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Tipo de busqueda: recent (ultimos 20), commands, security_scan, connection, all. O un texto para buscar.' },
+          days: { type: 'number', description: 'Cuantos dias atras buscar (default 7)' },
+        },
+        required: ['query'],
+      },
+      cache_control: { type: 'ephemeral' },
+    },
+  ];
+}
+
 function logExecution(connectionId, result) {
   try {
     db.prepare(
@@ -106,89 +218,18 @@ export async function chat(connectionInfo, userMessage, history = [], modelOverr
   const model = modelOverride || connectionInfo.preferred_model || getDefaultModel();
   const client = new Anthropic({ apiKey });
 
-  // Build enriched system prompt with profile + knowledge
-  let systemPrompt = SYSTEM_PROMPT.replace('{os_type}', connectionInfo.os_type || 'linux');
-
-  // Inject server profile
+  // Build system prompt with prompt caching (single breakpoint)
   const profile = getProfile(connectionInfo.id);
-  if (profile) {
-    systemPrompt += `\n\nPERFIL DEL SERVIDOR:
-- OS: ${profile.os_version || profile.distro || profile.os_family || 'desconocido'}
-- Familia OS: ${profile.os_family || 'desconocido'}
-- Distro: ${profile.distro || 'N/A'}
-- Kernel: ${profile.kernel_version || 'N/A'}
-- Arch: ${profile.arch || 'N/A'}
-- CPU: ${profile.cpu_info || 'N/A'}
-- RAM: ${profile.total_memory_mb ? profile.total_memory_mb + ' MB' : 'N/A'}
-- Disco: ${profile.total_disk_mb ? profile.total_disk_mb + ' MB' : 'N/A'}
-- Package Manager: ${profile.package_manager || 'N/A'}
-- Shell: ${profile.shell_version || 'N/A'}
-- Init System: ${profile.init_system || 'N/A'}
-- Rol: ${profile.role || 'no definido'}
-${profile.custom_notes ? '- Notas: ' + profile.custom_notes : ''}
-Usa el package manager correcto (${profile.package_manager}) y adapta los comandos a este SO especifico.`;
+  const knowledgeContext = getKnowledgeForPrompt(connectionInfo.id) || '';
+  const directivesContext = getDirectivesForPrompt(connectionInfo.os_type || 'linux') || '';
+  const serverContext = buildServerContext(connectionInfo.os_type, profile, knowledgeContext, directivesContext);
+  const systemBlocks = buildSystemBlocks(connectionInfo.os_type, serverContext);
+  const cachedTools = buildCachedTools();
 
-    // PowerShell version-specific rules
-    if (profile.os_family === 'windows' && profile.shell_version) {
-      const psMajor = parseInt(profile.shell_version);
-      systemPrompt += `\n\nVERSION DE POWERSHELL: ${profile.shell_version}`;
-      if (psMajor >= 7) {
-        systemPrompt += `\nEste servidor tiene PowerShell 7+. Usa cmdlets modernos: Get-CimInstance, Invoke-RestMethod, ConvertTo-Json. Puedes usar operador ternario (?:), null-coalescing (??), pipeline parallelism (ForEach-Object -Parallel). Evita Get-WmiObject (deprecado).`;
-      } else if (psMajor >= 5) {
-        systemPrompt += `\nEste servidor tiene PowerShell 5.x (Windows PowerShell). Get-CimInstance disponible y preferido. Get-WmiObject funciona pero es legacy. NO uses sintaxis de PS7: operador ternario (?:), null-coalescing (??), ForEach-Object -Parallel. Usa if/else en su lugar.`;
-      } else if (psMajor >= 3) {
-        systemPrompt += `\nEste servidor tiene PowerShell 3.x/4.x. Usa Get-CimInstance cuando sea posible, pero Get-WmiObject es mas confiable. No uses Invoke-RestMethod avanzado. Sintaxis basica solamente.`;
-      } else {
-        systemPrompt += `\nEste servidor tiene PowerShell legacy (2.x o anterior). SOLO usa Get-WmiObject, NO Get-CimInstance. No uses ConvertTo-Json, Invoke-RestMethod, ni cmdlets modernos. Usa .NET classes directamente cuando sea necesario. Comandos simples solamente.`;
-      }
-    }
-
-    // Bash version context for Linux
-    if (profile.os_family !== 'windows' && profile.shell_version && profile.shell_version !== 'unknown') {
-      systemPrompt += `\n\nVERSION DE BASH: ${profile.shell_version}`;
-    }
-  }
-
-  // Inject knowledge context
-  const knowledgeContext = getKnowledgeForPrompt(connectionInfo.id);
-  if (knowledgeContext) {
-    systemPrompt += knowledgeContext;
-  }
-
-  // Inject safety directives
-  const directivesContext = getDirectivesForPrompt(connectionInfo.os_type || 'linux');
-  if (directivesContext) {
-    systemPrompt += directivesContext;
-  }
-
-  const tools = [
-    {
-      name: 'execute_command',
-      description: 'Ejecuta un comando en el servidor remoto via SSH.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          command: { type: 'string', description: 'El comando a ejecutar en el servidor' },
-        },
-        required: ['command'],
-      },
-    },
-    {
-      name: 'query_server_history',
-      description: 'Consulta la bitacora de eventos del servidor. Usa esto cuando el usuario pregunte sobre el historial de acciones, que se hizo antes, cuando fue la ultima actualizacion, etc.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          query: { type: 'string', description: 'Tipo de busqueda: recent (ultimos 20), commands, security_scan, connection, all. O un texto para buscar.' },
-          days: { type: 'number', description: 'Cuantos dias atras buscar (default 7)' },
-        },
-        required: ['query'],
-      },
-    },
-  ];
-
+  // Sliding window: keep only the most recent messages
+  const trimmedHistory = history.slice(-HISTORY_WINDOW_SIZE);
   const messages = [
-    ...history.map((h) => ({ role: h.role, content: h.content })),
+    ...trimmedHistory.map((h) => ({ role: h.role, content: h.content })),
     { role: 'user', content: userMessage },
   ];
 
@@ -214,6 +255,8 @@ Usa el package manager correcto (${profile.package_manager}) y adapta los comand
   const totalStart = Date.now();
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
+  let totalCacheCreation = 0;
+  let totalCacheRead = 0;
   let apiResponseTimeMs = 0;
   let apiCallCount = 0;
 
@@ -222,19 +265,28 @@ Usa el package manager correcto (${profile.package_manager}) y adapta los comand
 
   const apiStart = Date.now();
   let response = await apiCallWithRetry({
-    model, max_tokens: 4096, system: systemPrompt, tools, messages,
+    model, max_tokens: 4096, system: systemBlocks, tools: cachedTools, messages,
   });
   apiResponseTimeMs += Date.now() - apiStart;
   totalInputTokens += response.usage?.input_tokens || 0;
   totalOutputTokens += response.usage?.output_tokens || 0;
+  totalCacheCreation += response.usage?.cache_creation_input_tokens || 0;
+  totalCacheRead += response.usage?.cache_read_input_tokens || 0;
 
-  emit('ai_thinking_done', { apiCall: apiCallCount, responseTimeMs: Date.now() - apiStart, inputTokens: response.usage?.input_tokens, outputTokens: response.usage?.output_tokens });
+  emit('ai_thinking_done', { apiCall: apiCallCount, responseTimeMs: Date.now() - apiStart, inputTokens: response.usage?.input_tokens, outputTokens: response.usage?.output_tokens, cacheCreation: response.usage?.cache_creation_input_tokens, cacheRead: response.usage?.cache_read_input_tokens });
 
   const commandResults = [];
   const executions = [];
 
-  // Tool-use loop
+  // Tool-use loop (max MAX_TOOL_ITERATIONS iterations)
+  let toolIteration = 0;
   while (response.stop_reason === 'tool_use') {
+    toolIteration++;
+
+    if (toolIteration > MAX_TOOL_ITERATIONS) {
+      emit('tool_limit', { message: `Limite de ${MAX_TOOL_ITERATIONS} iteraciones alcanzado. Abortando.`, iteration: toolIteration });
+      break;
+    }
     const assistantContent = response.content;
     const toolUseBlocks = assistantContent.filter((b) => b.type === 'tool_use');
     const textBlocks = assistantContent.filter((b) => b.type === 'text');
@@ -354,18 +406,28 @@ Usa el package manager correcto (${profile.package_manager}) y adapta los comand
     messages.push({ role: 'assistant', content: assistantContent });
     messages.push({ role: 'user', content: toolResults });
 
+    // On the last allowed iteration, inject a closure instruction
+    if (toolIteration === MAX_TOOL_ITERATIONS) {
+      messages.push({
+        role: 'user',
+        content: `IMPORTANTE: Has alcanzado el maximo de ${MAX_TOOL_ITERATIONS} iteraciones de herramientas. Responde al usuario ahora con un resumen final de lo que descubriste hasta este punto, incluso si no tienes toda la informacion deseada. No llames mas tools en esta respuesta.`,
+      });
+    }
+
     // Next API call
     emit('thinking', { message: 'Analizando resultados...', model, apiCall: ++apiCallCount });
 
     const loopStart = Date.now();
     response = await apiCallWithRetry({
-      model, max_tokens: 4096, system: systemPrompt, tools, messages,
+      model, max_tokens: 4096, system: systemBlocks, tools: cachedTools, messages,
     });
     apiResponseTimeMs += Date.now() - loopStart;
     totalInputTokens += response.usage?.input_tokens || 0;
     totalOutputTokens += response.usage?.output_tokens || 0;
+    totalCacheCreation += response.usage?.cache_creation_input_tokens || 0;
+    totalCacheRead += response.usage?.cache_read_input_tokens || 0;
 
-    emit('ai_thinking_done', { apiCall: apiCallCount, responseTimeMs: Date.now() - loopStart, inputTokens: response.usage?.input_tokens, outputTokens: response.usage?.output_tokens });
+    emit('ai_thinking_done', { apiCall: apiCallCount, responseTimeMs: Date.now() - loopStart, inputTokens: response.usage?.input_tokens, outputTokens: response.usage?.output_tokens, cacheCreation: response.usage?.cache_creation_input_tokens, cacheRead: response.usage?.cache_read_input_tokens });
   }
 
   const totalLatencyMs = Date.now() - totalStart;
@@ -381,6 +443,8 @@ Usa el package manager correcto (${profile.package_manager}) y adapta los comand
     model,
     inputTokens: totalInputTokens,
     outputTokens: totalOutputTokens,
+    cacheCreationTokens: totalCacheCreation,
+    cacheReadTokens: totalCacheRead,
     responseTimeMs: apiResponseTimeMs,
     totalLatencyMs,
     estimatedCost: estimateCost(model, totalInputTokens, totalOutputTokens),
