@@ -77,7 +77,7 @@ export default function Sidebar({
     <div className="sidebar">
       <div className="sidebar-header">
         <div className="sidebar-logo">
-          <span className="logo-kodo">Kodo</span>
+          <span className="logo-kodo">Kōdo</span>
           <span>Infrastructure Agent</span>
           <span
             className="sidebar-version"
