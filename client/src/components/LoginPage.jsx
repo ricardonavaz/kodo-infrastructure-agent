@@ -72,7 +72,7 @@ export default function LoginPage({ onLogin }) {
     <div className="login-page">
       <div className="login-card">
         <div className="login-header">
-          <span className="logo-kodo" style={{ fontSize: 28 }}>Kodo</span>
+          <span className="logo-kodo" style={{ fontSize: 28 }}>Kōdo</span>
           <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Infrastructure Agent</span>
         </div>
 
