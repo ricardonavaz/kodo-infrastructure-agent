@@ -1,11 +1,5 @@
 import React from 'react';
 
-const STATUS_COLORS = {
-  good: 'var(--accent)',
-  warning: 'var(--amber)',
-  critical: 'var(--red)',
-};
-
 const STATUS_LABELS = {
   good: 'Correcto',
   warning: 'Advertencia',
@@ -14,16 +8,14 @@ const STATUS_LABELS = {
 
 export default function SummaryCard({ block }) {
   const { title, status = 'good', statusText, highlights = [], stats = [] } = block;
-  const color = STATUS_COLORS[status] || STATUS_COLORS.good;
 
   return (
     <div className="sb-summary">
       <div className="sb-summary-header">
         <span className="sb-summary-title">{title || 'Resumen'}</span>
-        <div className="sb-summary-status">
-          <span className="sb-summary-dot" style={{ backgroundColor: color }} />
-          <span style={{ color }}>{statusText || STATUS_LABELS[status] || status}</span>
-        </div>
+        <span className="sb-status-badge" data-status={status}>
+          {statusText || STATUS_LABELS[status] || status}
+        </span>
       </div>
 
       {highlights.length > 0 && (
