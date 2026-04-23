@@ -173,6 +173,59 @@ En ese momento decidiremos el orden de los próximos 3 sprints considerando:
   catastrofico. Optimizacion de UX, no fix de bug.
 - **Estimado:** 30 minutos para opcion 1, 2-3 horas para opcion 2.
 
+### Hallazgo arq-3 (MEDIO): CSS muerto en Recommendation y SummaryCard por inline styles
+
+- **Detectado:** Sprint B0, fix H6 (19 abril 2026)
+- **Comportamiento:** Recommendation.jsx (linea 26) y SummaryCard.jsx
+  (lineas 24-25) usan style={{...}} inline para colores de priority/
+  status. El CSS de clase para estos badges
+  (.sb-priority-badge.high/.medium/.low en index.css:3663-3665) existe
+  pero nunca se aplica porque el inline style gana en especificidad.
+- **Impacto:** funciona visualmente (los inline styles pintan), pero
+  tenemos CSS muerto y patron inconsistente con Finding (que va a usar
+  data-attributes despues del fix H6). Tres componentes, tres tecnicas
+  distintas: data-attribute, inline style, inline style.
+- **Fix sugerido:** unificar los 3 componentes al mismo patron
+  (data-attribute + CSS) post-H6.
+- **Prioridad:** Media. Funcional pero deuda de mantenimiento.
+- **Estimado:** 1-2 horas.
+
+### Hallazgo arq-4 (ALTA): cero infraestructura de tests del frontend
+
+- **Detectado:** Sprint B0, fix H6 (19 abril 2026)
+- **Comportamiento:** No existe Vitest, Jest, ni React Testing Library
+  en /client. No hay archivos *.test.*, no hay carpeta __tests__ en
+  client/src/. El backend tiene 163 tests; el frontend tiene 0.
+- **Impacto:** los bugs visuales (como H6) viven sin deteccion hasta
+  que un humano los ve manualmente. Los proximos sprints UX van a
+  estar parcialmente ciegos sin esta infra. Cualquier cambio CSS
+  puede romper otros componentes sin que nadie lo detecte hasta
+  produccion.
+- **Fix sugerido:** instalar Vitest + React Testing Library +
+  @testing-library/jest-dom. Configurar un primer test por componente
+  critico (Finding, QuestionPrompt, Recommendation, SummaryCard,
+  TextBlock).
+- **Prioridad:** ALTA. Bloqueador para Sprint B0+ con confianza.
+- **Estimado:** 4-6 horas para setup + 5-10 tests iniciales por
+  componente.
+
+### Hallazgo arq-5 (MEDIO): semantica de colores inconsistente entre componentes
+
+- **Detectado:** Sprint B0, fix H6 (19 abril 2026)
+- **Comportamiento:** El token --amber significa "high" en Finding,
+  "medium" en Recommendation, "warning" en SummaryCard. El mismo
+  color visual comunica conceptos distintos segun el componente.
+- **Impacto:** confusion para el usuario. Un usuario que aprende
+  "amarillo = high" en Finding va a interpretar mal el "amarillo =
+  medium" de Recommendation.
+- **Fix sugerido:** definir un sistema de tokens semanticos (no por
+  color sino por significado): --severity-low, --severity-medium,
+  --severity-high, --severity-critical. Mapear cada componente al
+  mismo token segun su semantica real.
+- **Prioridad:** Media. Refactor visual de impacto pero no bloqueante.
+- **Estimado:** 2-3 horas (tokens + actualizacion de los 3
+  componentes).
+
 ---
 
-**Última actualización:** 22 abril 2026 (agregados hallazgos arq-1, arq-2 durante fix H8)
+**Última actualización:** 22 abril 2026 (agregados hallazgos arq-3, arq-4, arq-5 durante fix H6)

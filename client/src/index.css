@@ -3497,10 +3497,10 @@ select.pbe-input { cursor: pointer; }
   background: rgba(255, 255, 255, 0.05);
 }
 
-.sb-severity-badge.critical { color: var(--red); border: 1px solid rgba(255, 68, 68, 0.3); }
-.sb-severity-badge.high { color: var(--amber); border: 1px solid rgba(255, 184, 0, 0.3); }
-.sb-severity-badge.medium { color: var(--blue); border: 1px solid rgba(88, 166, 255, 0.3); }
-.sb-severity-badge.low { color: var(--accent); border: 1px solid rgba(0, 255, 65, 0.3); }
+.sb-severity-badge[data-severity="critical"] { color: var(--red); border: 1px solid rgba(255, 68, 68, 0.3); }
+.sb-severity-badge[data-severity="high"] { color: var(--amber); border: 1px solid rgba(255, 184, 0, 0.3); }
+.sb-severity-badge[data-severity="medium"] { color: var(--blue); border: 1px solid rgba(88, 166, 255, 0.3); }
+.sb-severity-badge[data-severity="low"] { color: var(--accent); border: 1px solid rgba(0, 255, 65, 0.3); }
 
 .sb-finding-description {
   font-size: 12px;
