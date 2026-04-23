@@ -27,8 +27,8 @@ try {
 } catch { /* table may not exist yet */ }
 
 const TASK_PATTERNS = [
-  [/actualiz|update|upgrade|patch|parche/i, 'maintenance'],
-  [/diagnos|problema|error|log|revisar|debug/i, 'diagnostic'],
+  [/actualiz|update|upgrade|patch|parche|manteni/i, 'maintenance'],
+  [/diagnos|problema|error|log|revis|debug/i, 'diagnostic'],
   [/deploy|desplieg|instalar|install/i, 'deployment'],
   [/config|ajust|modific|cambiar|set/i, 'configuration'],
   [/monitor|estado|salud|health|cpu|ram|disco|disk|memoria|uptime/i, 'monitoring'],
@@ -36,9 +36,15 @@ const TASK_PATTERNS = [
   [/reinici|restart|reboot|stop|start|servicio|service/i, 'maintenance'],
 ];
 
-function detectTaskType(prompt) {
+/**
+ * @internal Detects task type from user message for model routing.
+ * @param {string} message - The user input message.
+ * @returns {string} Task type: maintenance, diagnostic, deployment,
+ *   configuration, monitoring, security, or other.
+ */
+export function detectTaskType(message) {
   for (const [pattern, type] of TASK_PATTERNS) {
-    if (pattern.test(prompt)) return type;
+    if (pattern.test(message)) return type;
   }
   return 'other';
 }
