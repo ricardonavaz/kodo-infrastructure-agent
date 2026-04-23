@@ -226,6 +226,64 @@ En ese momento decidiremos el orden de los próximos 3 sprints considerando:
 - **Estimado:** 2-3 horas (tokens + actualizacion de los 3
   componentes).
 
+### Hallazgo arq-6 (MEDIO): Recommendation priority siempre 'medium' (bug del parser)
+
+- **Detectado:** Sprint B0, verificacion visual de H6 (23 abril 2026)
+- **Comportamiento:** Todos los bloques Recommendation reciben
+  priority='medium' sin importar el contenido real de la
+  recomendacion del modelo. El parser semantico no extrae
+  correctamente el priority del output de Claude.
+- **Ya documentado:** bug #3 en docs/semantic-parser-bugs.md. Este
+  hallazgo solo lo refleja en backlog arquitectural para visibilidad.
+- **Impacto:** todas las recomendaciones se pintan naranja (token
+  --sev-high-bg), perdiendo la senal visual de urgencia real. El
+  usuario no puede priorizar de un vistazo.
+- **Fix sugerido:** ver docs/semantic-parser-bugs.md bug #3.
+- **Prioridad:** Media. Bloqueador para que el mapping semantico
+  AAA de H6 tenga valor real. Sin este fix, el esfuerzo visual
+  solo comunica "todo es medium".
+- **Estimado:** ver semantic-parser-bugs.md.
+
+### Hallazgo arq-7 (BAJA): "Riesgo: low" sin badge propio en Recommendation
+
+- **Detectado:** Sprint B0, verificacion visual de H6 (23 abril 2026)
+- **Comportamiento:** El campo `risk` de Recommendation se renderiza
+  como texto plano con label "Riesgo:" prefijo (Recommendation.jsx
+  lineas ~34-37). Los valores "low"/"medium"/"high" no tienen
+  tratamiento visual distintivo. Ademas esta mal alineado con el
+  badge de priority.
+- **Impacto:** confusion visual. El usuario ve dos conceptos de
+  severidad (priority + risk) pero solo uno tiene senal visual.
+  Ademas priority dice "Alta"/"Media"/"Baja" pero risk dice
+  "low"/"medium"/"high" sin traducir.
+- **Fix sugerido:** agregar badge a risk usando los mismos tokens
+  --sev-*-bg (risk "high" → critical-bg, etc). Traducir labels.
+  Alinear con el badge de priority en el layout del header.
+- **Prioridad:** Baja. No bloqueante, mejora de coherencia visual.
+- **Estimado:** 1 hora.
+
+### Hallazgo arq-8 (MEDIO): Width unbounded en cards Finding y Recommendation
+
+- **Detectado:** Sprint B0, verificacion visual de H6 (23 abril 2026)
+- **Comportamiento:** Los contenedores `.sb-finding` y
+  `.sb-recommendation` (index.css ~3462 y ~3665) no tienen
+  `max-width` ni padding horizontal del padre, asi que cuando la
+  ventana del chat es ancha las cards se estiran a 100% del
+  disponible.
+- **Impacto:** a resoluciones >1440px las cards se ven
+  desproporcionadas, el texto se rompe en lineas muy largas y la
+  densidad visual se degrada. En mobile (<768px) probablemente
+  funciona bien por el viewport, pero desktop wide no esta
+  considerado.
+- **Fix sugerido:** agregar `max-width` sensato (~720-800px) al
+  contenedor padre del chat o directamente a las cards. Verificar
+  interaccion con el layout del chat (flex/grid del parent).
+- **Prioridad:** Media. Afecta ergonomia de lectura en pantallas
+  grandes, que es el escenario real de uso (operador en estacion de
+  trabajo).
+- **Estimado:** 1-2 horas (depende de donde este el constraint
+  correcto del layout).
+
 ---
 
-**Última actualización:** 22 abril 2026 (agregados hallazgos arq-3, arq-4, arq-5 durante fix H6)
+**Última actualización:** 23 abril 2026 (agregados hallazgos arq-6, arq-7, arq-8 durante verificacion visual de H6)

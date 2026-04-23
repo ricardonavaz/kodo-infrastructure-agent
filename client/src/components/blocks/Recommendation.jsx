@@ -1,11 +1,5 @@
 import React from 'react';
 
-const PRIORITY_COLORS = {
-  high: 'var(--red)',
-  medium: 'var(--amber)',
-  low: 'var(--accent)',
-};
-
 const PRIORITY_LABELS = {
   high: 'Alta',
   medium: 'Media',
@@ -14,7 +8,6 @@ const PRIORITY_LABELS = {
 
 export default function Recommendation({ block, onAction }) {
   const { description, priority = 'medium', risk, command } = block;
-  const color = PRIORITY_COLORS[priority] || PRIORITY_COLORS.medium;
 
   const handleExecute = () => {
     if (onAction && command) onAction('execute', command);
@@ -23,7 +16,7 @@ export default function Recommendation({ block, onAction }) {
   return (
     <div className="sb-recommendation">
       <div className="sb-recommendation-header">
-        <span className="sb-priority-badge" style={{ backgroundColor: color }}>
+        <span className="sb-priority-badge" data-priority={priority}>
           {PRIORITY_LABELS[priority] || priority}
         </span>
       </div>
