@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatMessage, inlineFormat } from '../../utils/formatMessage.jsx';
 
 const SEVERITY_CLASSES = {
   critical: 'sb-finding-critical',
@@ -27,10 +28,15 @@ export default function Finding({ block }) {
         <span className="sb-severity-badge" data-severity={severity}>
           {SEVERITY_LABELS[severity] || severity}
         </span>
-        <span className="sb-finding-title">{title}</span>
+        <span
+          className="sb-finding-title"
+          dangerouslySetInnerHTML={{ __html: inlineFormat(title || '') }}
+        />
       </div>
 
-      {description && <p className="sb-finding-desc">{description}</p>}
+      {description && (
+        <div className="sb-finding-desc">{formatMessage(description)}</div>
+      )}
 
       {impact && (
         <div className="sb-finding-section">
@@ -40,7 +46,9 @@ export default function Finding({ block }) {
           >
             {showImpact ? '▾' : '▸'} Impacto
           </button>
-          {showImpact && <div className="sb-finding-content">{impact}</div>}
+          {showImpact && (
+            <div className="sb-finding-content">{formatMessage(impact)}</div>
+          )}
         </div>
       )}
 
@@ -60,7 +68,7 @@ export default function Finding({ block }) {
 
       {remediation && (
         <div className="sb-finding-remediation">
-          <strong>Remediacion:</strong> {remediation}
+          <strong>Remediacion:</strong> {formatMessage(remediation)}
         </div>
       )}
     </div>

@@ -284,6 +284,101 @@ En ese momento decidiremos el orden de los próximos 3 sprints considerando:
 - **Estimado:** 1-2 horas (depende de donde este el constraint
   correcto del layout).
 
+### Hallazgo arq-9 (BAJA): formatMessage no soporta links markdown
+
+- **Detectado:** Sprint B0, analisis de H5 (23 abril 2026)
+- **Comportamiento:** formatMessage() en client/src/utils/formatMessage.jsx
+  no procesa links [texto](url). Claude a veces emite URLs en este
+  formato que aparecerian como texto literal.
+- **Tambien faltan:** strikethrough (~~texto~~), listas anidadas,
+  blockquotes (> texto).
+- **Impacto:** si una respuesta del modelo incluye un link con sintaxis
+  markdown, el usuario ve el texto con asteriscos/corchetes crudos.
+- **Fix sugerido:** extender formatMessage con regex para links.
+  Strikethrough, nested lists, blockquotes son nice-to-have.
+- **Prioridad:** Baja. Claude tiende a emitir URLs planas mas que
+  markdown-wrapped, asi que el impacto diario es minimo.
+- **Estimado:** 30 min para links, 2 horas para todos los adds.
+
+### Hallazgo arq-10 (CRITICO): boton "Reporte IA" devuelve error de autenticacion
+
+- **Detectado:** Sprint B0, verificacion visual de H5 (24 abril 2026)
+- **Comportamiento:** Al hacer click en "Reporte IA" desde un mensaje
+  de respuesta del agente, la app devuelve:
+  {"error":"Token de autenticacion requerido"}
+- **Impacto:** funcionalidad critica rota. Los usuarios clickean una
+  feature prometida y reciben error. Destruye confianza.
+- **Causa raiz hipotetizada (a confirmar):** el endpoint de generacion
+  de reporte IA requiere autenticacion pero el cliente no esta
+  enviando el token JWT (o similar) en el request. Posibles causas:
+  1. Header Authorization no incluido en el fetch del boton.
+  2. Token expirado y no se renovo.
+  3. Endpoint cambio pero el cliente no se actualizo.
+  4. CORS o configuracion de cookies.
+- **Fix sugerido:** investigar el request que dispara el boton
+  Reporte IA, verificar que incluya el token JWT del usuario actual,
+  y que el endpoint lo valide correctamente.
+- **Prioridad:** CRITICO. Bug funcional, no cosmetico.
+- **Estimado:** 1-2 horas (diagnostico + fix).
+
+### Hallazgo arq-11 (ALTO): botones export HTML/MD/TXT sin claridad de funcion
+
+- **Detectado:** Sprint B0, verificacion visual de H5 (24 abril 2026)
+- **Comportamiento:** Los tres botones HTML, MD y TXT en el footer
+  de cada mensaje no tienen tooltip ni label descriptivo que explique
+  que hace cada uno. El usuario no sabe si son para exportar, imprimir,
+  copiar, o visualizar en otro formato.
+- **Impacto:** feature que existe pero no se usa por falta de
+  descubribilidad. Confusion visual.
+- **Fix sugerido:** opciones a evaluar:
+  1. Agregar tooltip descriptivo (hover) a cada boton.
+  2. Consolidar en un solo boton "Exportar" con dropdown de formatos.
+  3. Texto descriptivo en el boton (ej: "Copiar como HTML" en
+     lugar de solo "HTML").
+- **Prioridad:** Alta. UX confusa en feature user-facing.
+- **Estimado:** 1 hora (decision de diseno + implementacion).
+
+### Hallazgo arq-12 (ALTO): botones HTML/MD/TXT ademas podrian no estar funcionando
+
+- **Detectado:** Sprint B0, verificacion visual de H5 (24 abril 2026)
+- **Comportamiento reportado por Ricardo:** "no funcionan bien".
+  Necesita diagnostico especifico para entender que esta mal
+  exactamente (no hacen nada al click / hacen algo incorrecto /
+  producen error silencioso).
+- **Impacto:** funcionalidad prometida pero rota.
+- **Fix sugerido:** diagnostico con DevTools abierto al hacer click
+  en cada boton. Investigar handlers onClick, endpoints que llaman,
+  y output real.
+- **Relacion con arq-11:** probablemente mismo componente. Arreglar
+  ambos en la misma sesion tiene sentido.
+- **Prioridad:** Alta. Bug funcional.
+- **Estimado:** 1-2 horas (depende del diagnostico).
+
+### Hallazgo arq-13 (MEDIO): formatMessage no procesa bold inline dentro de celdas de tabla
+
+- **Detectado:** Sprint B0, verificacion visual de H5 (24 abril 2026)
+- **Comportamiento:** En client/src/utils/formatMessage.jsx, el
+  parser de tablas GFM (| col | col |) correctamente identifica la
+  estructura de la tabla pero NO ejecuta inlineFormat sobre el
+  contenido de cada celda. Los **bold**, *italic* y `code` dentro
+  de celdas aparecen como texto literal con los delimitadores
+  visibles.
+- **Evidencia:** reportes de auditoria de Kodo frecuentemente emiten
+  tablas con nombres de procesos o parametros en bold dentro de
+  celdas (ej: "| **EXCEL** | 27166.28 | 233.47 |"). Todos aparecen
+  con asteriscos.
+- **Impacto:** alto en visual. Tablas son una de las estructuras
+  visuales mas usadas en reportes de auditoria. Degrada la calidad
+  del render.
+- **Fix sugerido:** extender el parser de tablas de formatMessage
+  para pasar cada celda por inlineFormat antes de renderizarla.
+  Estimado: 5-10 lineas de cambio + tests dirigidos para casos edge
+  (celdas con code inline, celdas con combinaciones).
+- **Prioridad:** Media. No bloqueante pero altamente visible. Su
+  fix destraba calidad visual del 100% de outputs del modelo que
+  incluyan tablas con bold.
+- **Estimado:** 30-45 minutos (cambio + tests).
+
 ---
 
-**Última actualización:** 23 abril 2026 (agregados hallazgos arq-6, arq-7, arq-8 durante verificacion visual de H6)
+**Última actualización:** 24 abril 2026 (agregados hallazgos arq-9, arq-10, arq-11, arq-12, arq-13 durante H5)
