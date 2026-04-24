@@ -382,8 +382,14 @@ En ese momento decidiremos el orden de los próximos 3 sprints considerando:
 ### Hallazgo arq-14 (ALTO): fetches crudos sin Authorization en multiples componentes
 
 - **Detectado:** Sprint B0, durante fix arq-10/arq-12 (24 abril 2026)
+- **Corregido:** conteo revisado durante fix arq-14 (24 abril 2026)
+  — son **6 fetches**, no 7. LoginPage.jsx:52 fue confirmado
+  intencional: ya incluye Authorization header manualmente usando
+  el token del state local durante el flow de must_change_password
+  (el token aun no esta en localStorage en ese momento del flujo,
+  asi que authorizedFetch no aplica).
 - **Comportamiento:** El grep de fetch crudo en client/src/ durante
-  el fix de Terminal.jsx revelo 7 llamadas adicionales a fetch()
+  el fix de Terminal.jsx revelo 6 llamadas adicionales a fetch()
   sin incluir Authorization header:
 
   1. client/src/hooks/useApi.js:213 - executePlaybookStream
@@ -403,18 +409,17 @@ En ese momento decidiremos el orden de los próximos 3 sprints considerando:
        estan en skip-list del middleware de auth o tienen auth
        custom.
 
-  3. client/src/components/LoginPage.jsx:52 - cambio de password
-     post-login:
-     - Endpoint: POST /api/auth/password
-     - Segun routes/auth.js:6-11, este endpoint SI requiere auth.
-     - Impacto: cambio de password despues del primer login esta
-       roto. Bug confirmado.
+  3. (NO aplica) client/src/components/LoginPage.jsx:52 - cambio de
+     password post-login:
+     - Endpoint: PUT /api/auth/password
+     - Confirmado durante fix arq-14: ya incluye Authorization
+       header manual con el token del state local. NO es bug,
+       NO se cambia.
 
 - **Fix sugerido:** Usar authorizedFetch (ya creado en useApi.js)
   o migrar a api.X donde aplique. Mismo patron que arq-10/12.
 
-- **Prioridad:** ALTO. Al menos un bug confirmado (cambio de
-  password) y 2 grupos de bugs altamente probables (playbooks,
+- **Prioridad:** ALTO. 2 grupos de bugs probables (playbooks,
   master-key). Estos tocan features user-facing.
 
 - **Estimado:** 1-2 horas (probar cada uno, aplicar
@@ -423,6 +428,71 @@ En ese momento decidiremos el orden de los próximos 3 sprints considerando:
 - **Nota:** podria revelar mas endpoints con problemas si el
   testing destapa casos edge.
 
+### Hallazgo arq-15 (MEDIO): patron de error handling silencioso en multiples componentes del cliente
+
+- **Detectado:** Sprint B0, durante fix arq-14 (24 abril 2026)
+- **Comportamiento:** Patron recurrente de catch silencioso o ausente
+  que oculta errores al usuario:
+
+  1. client/src/components/Settings.jsx:
+     - loadMkStatus (linea ~23-25): catch { /* ignore */ } silencia
+       fallos. Si el fetch falla, mkStatus queda null y la UI no
+       muestra la seccion de Clave Maestra - el usuario piensa que
+       la feature no existe.
+     - handleLock (linea ~89): NO tiene catch. Un error en fetch
+       rompe la promise sin alert al usuario.
+
+  2. (Histórico) client/src/components/Terminal.jsx:
+     - exportAsReport (ya resuelto en arq-10/12): tenia catch
+       vacio que hacia que los botones HTML/MD/TXT descargaran
+       archivos basura con JSON de error adentro.
+
+- **Impacto:** bugs silenciosos. El usuario no recibe feedback
+  cuando las features fallan. Confusion, debugging dificil.
+
+- **Fix sugerido:** barrido sistematico de client/src/ buscando:
+  - catch {} vacios
+  - try sin catch (solo try/finally o solo try)
+  - catch con console.log pero sin UI feedback
+
+  Decidir politica consistente: alert() para errores user-facing,
+  log + toast para errores no criticos.
+
+- **Prioridad:** Medio. No bloqueante pero mejora significativamente
+  la experiencia de debugging y reporta de bugs.
+
+- **Estimado:** 3-4 horas (barrido + fix + testing).
+
+### Hallazgo arq-16 (ALTO): pantalla de playbooks no renderiza resultado de ejecucion
+
+- **Detectado:** Sprint B0, verificacion de arq-14 (24 abril 2026)
+- **Comportamiento:** Cuando se ejecuta un playbook desde la
+  pantalla dedicada de Playbooks (no desde el chat principal), el
+  playbook se ejecuta correctamente (auth funciona, backend
+  procesa) pero la UI no muestra el output del streaming. El
+  usuario no ve progreso ni resultado final.
+- **Confirmado:** arq-14 arreglo el problema de auth (ya no hay
+  error 401). Por lo tanto este bug es de rendering UI, no de
+  conectividad.
+- **Causa raiz hipotetizada (a confirmar):**
+  - Posible: el componente de playbooks no tiene listener para
+    los eventos del stream
+  - Posible: el handler del stream existe pero el state no se
+    actualiza correctamente
+  - Posible: el componente esta desmontado antes de que llegue
+    el primer evento
+- **Impacto:** funcionalidad existe pero invisible para el
+  usuario. UX rota en feature user-facing.
+- **Fix sugerido:** diagnostico con DevTools para ver si los
+  eventos del stream llegan al cliente. Si llegan, problema de
+  rendering. Si no llegan, problema de subscripcion. Despues
+  decidir.
+- **Prioridad:** ALTA. Bug funcional visible.
+- **Estimado:** 1-2 horas (depende del diagnostico).
+- **Relacion con backlog:** este bug refuerza la urgencia de
+  Idea 1 (Sprint Playbooks @nombre con UX rica) ya que la pantalla
+  actual de playbooks tiene problemas fundamentales de UX.
+
 ---
 
-**Última actualización:** 24 abril 2026 (agregados hallazgos arq-9, arq-10, arq-11, arq-12, arq-13, arq-14 durante H5 y fix arq-10/12)
+**Última actualización:** 24 abril 2026 (corregido arq-14, agregados arq-15 y arq-16 durante fix arq-14)

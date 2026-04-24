@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../hooks/useApi.js';
+import { api, authorizedFetch } from '../hooks/useApi.js';
 
 export default function Settings({ onClose }) {
   const [apiKey, setApiKey] = useState('');
@@ -20,7 +20,7 @@ export default function Settings({ onClose }) {
 
   const loadMkStatus = async () => {
     try {
-      const data = await fetch('/api/settings/master-key/status').then((r) => r.json());
+      const data = await authorizedFetch('/api/settings/master-key/status').then((r) => r.json());
       setMkStatus(data);
     } catch { /* ignore */ }
   };
@@ -48,7 +48,7 @@ export default function Settings({ onClose }) {
 
     setMkSaving(true);
     try {
-      const res = await fetch('/api/settings/master-key/setup', {
+      const res = await authorizedFetch('/api/settings/master-key/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: mkPassword, useKeychain: mkUseKeychain }),
@@ -69,7 +69,7 @@ export default function Settings({ onClose }) {
     setMkError('');
     setMkSaving(true);
     try {
-      const res = await fetch('/api/settings/master-key/unlock', {
+      const res = await authorizedFetch('/api/settings/master-key/unlock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: mkPassword }),
@@ -86,14 +86,14 @@ export default function Settings({ onClose }) {
   };
 
   const handleLock = async () => {
-    await fetch('/api/settings/master-key/lock', { method: 'POST' });
+    await authorizedFetch('/api/settings/master-key/lock', { method: 'POST' });
     loadMkStatus();
   };
 
   const handleEncryptAll = async () => {
     if (!confirm('Cifrar todas las credenciales existentes?')) return;
     try {
-      const res = await fetch('/api/settings/connections/encrypt-all', { method: 'POST' });
+      const res = await authorizedFetch('/api/settings/connections/encrypt-all', { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       alert(`${data.encrypted} credenciales cifradas`);

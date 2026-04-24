@@ -210,7 +210,7 @@ export const api = {
     request(`/playbooks/runs/${runId}/interactions/${interactionId}/respond`, { method: 'POST', body: data }),
   executePlaybookStream: (id, data, onEvent) => {
     return new Promise((resolve, reject) => {
-      fetch(`${BASE}/playbooks/${id}/execute-stream`, {
+      authorizedFetch(`${BASE}/playbooks/${id}/execute-stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
