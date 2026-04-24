@@ -27,6 +27,23 @@ async function request(path, options = {}) {
   return data;
 }
 
+export async function authorizedFetch(path, options = {}) {
+  const headers = {
+    ...getAuthHeaders(),
+    ...(options.headers || {}),
+  };
+  const res = await fetch(path, { ...options, headers });
+
+  if (res.status === 401) {
+    localStorage.removeItem('kodo_token');
+    localStorage.removeItem('kodo_user');
+    window.location.reload();
+    throw new Error('Sesion expirada');
+  }
+
+  return res;
+}
+
 function buildQuery(params) {
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(params || {})) {
