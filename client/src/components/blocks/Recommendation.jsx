@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatMessage, inlineFormat } from '../../utils/formatMessage.jsx';
 
 const PRIORITY_LABELS = {
   high: 'Alta',
@@ -21,11 +22,12 @@ export default function Recommendation({ block, onAction }) {
         </span>
       </div>
 
-      <p className="sb-recommendation-desc">{description}</p>
+      <div className="sb-recommendation-desc">{formatMessage(description)}</div>
 
       {risk && (
         <div className="sb-recommendation-risk">
-          <span className="sb-recommendation-risk-label">Riesgo:</span> {risk}
+          <span className="sb-recommendation-risk-label">Riesgo:</span>{' '}
+          <span dangerouslySetInnerHTML={{ __html: inlineFormat(risk) }} />
         </div>
       )}
 

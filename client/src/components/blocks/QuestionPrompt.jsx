@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatMessage } from '../../utils/formatMessage.jsx';
 
 export default function QuestionPrompt({ block, onAction }) {
   const { question, options = [], inputType = 'buttons', placeholder } = block;
@@ -100,7 +101,7 @@ export default function QuestionPrompt({ block, onAction }) {
 
   return (
     <div className="sb-question">
-      <p className="sb-question-text">{question}</p>
+      <div className="sb-question-text">{formatMessage(question)}</div>
       {renderInput()}
     </div>
   );
