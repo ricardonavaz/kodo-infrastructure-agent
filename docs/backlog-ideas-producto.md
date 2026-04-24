@@ -379,6 +379,50 @@ En ese momento decidiremos el orden de los próximos 3 sprints considerando:
   incluyan tablas con bold.
 - **Estimado:** 30-45 minutos (cambio + tests).
 
+### Hallazgo arq-14 (ALTO): fetches crudos sin Authorization en multiples componentes
+
+- **Detectado:** Sprint B0, durante fix arq-10/arq-12 (24 abril 2026)
+- **Comportamiento:** El grep de fetch crudo en client/src/ durante
+  el fix de Terminal.jsx revelo 7 llamadas adicionales a fetch()
+  sin incluir Authorization header:
+
+  1. client/src/hooks/useApi.js:213 - executePlaybookStream
+     - Endpoint: POST /api/playbooks/.../execute-stream con streaming
+     - Impacto: si el endpoint requiere auth (probable), ejecucion
+       de playbooks esta rota.
+
+  2. client/src/components/Settings.jsx:23,51,72,89,96 - 5 endpoints
+     de configuracion:
+     - /api/settings/master-key/status
+     - /api/settings/master-key/setup
+     - /api/settings/master-key/unlock
+     - /api/settings/master-key/lock
+     - /api/settings/connections/encrypt-all
+     - Impacto: funcionalidad de master-key y cifrado masivo
+       probablemente rota. Requiere verificar si estos endpoints
+       estan en skip-list del middleware de auth o tienen auth
+       custom.
+
+  3. client/src/components/LoginPage.jsx:52 - cambio de password
+     post-login:
+     - Endpoint: POST /api/auth/password
+     - Segun routes/auth.js:6-11, este endpoint SI requiere auth.
+     - Impacto: cambio de password despues del primer login esta
+       roto. Bug confirmado.
+
+- **Fix sugerido:** Usar authorizedFetch (ya creado en useApi.js)
+  o migrar a api.X donde aplique. Mismo patron que arq-10/12.
+
+- **Prioridad:** ALTO. Al menos un bug confirmado (cambio de
+  password) y 2 grupos de bugs altamente probables (playbooks,
+  master-key). Estos tocan features user-facing.
+
+- **Estimado:** 1-2 horas (probar cada uno, aplicar
+  authorizedFetch, verificar visualmente).
+
+- **Nota:** podria revelar mas endpoints con problemas si el
+  testing destapa casos edge.
+
 ---
 
-**Última actualización:** 24 abril 2026 (agregados hallazgos arq-9, arq-10, arq-11, arq-12, arq-13 durante H5)
+**Última actualización:** 24 abril 2026 (agregados hallazgos arq-9, arq-10, arq-11, arq-12, arq-13, arq-14 durante H5 y fix arq-10/12)

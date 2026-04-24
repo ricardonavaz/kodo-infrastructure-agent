@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { api } from '../hooks/useApi.js';
+import { api, authorizedFetch } from '../hooks/useApi.js';
 import ModelSelector, { getModelLabel } from './ModelSelector.jsx';
 import InitialActions from './InitialActions.jsx';
 import SessionBanner from './SessionBanner.jsx';
@@ -171,7 +171,7 @@ function extractSuggestedActions(text) {
 // Export message as rich report
 async function exportAsReport(msg, format = 'html', serverName = '') {
   try {
-    const res = await fetch('/api/export/message', {
+    const res = await authorizedFetch('/api/export/message', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: msg.content, metrics: msg.metrics, serverName, format }),
@@ -186,7 +186,9 @@ async function exportAsReport(msg, format = 'html', serverName = '') {
     a.download = `kodo-report-${new Date().toISOString().slice(0, 16).replace(/[:.]/g, '-')}.${ext}`;
     a.click();
     URL.revokeObjectURL(url);
-  } catch { /* fallback to plain text */ }
+  } catch (e) {
+    alert('Error al exportar: ' + e.message);
+  }
 }
 
 const STATUS_CONFIG = {
@@ -249,7 +251,7 @@ export default function Terminal({ connection, connectionStatus, connectionLogs,
   const exportEnhanced = async (msg) => {
     setExporting(true);
     try {
-      const res = await fetch('/api/export/enhanced', {
+      const res = await authorizedFetch('/api/export/enhanced', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
