@@ -101,15 +101,18 @@ export default function PlaybookManager({ connections, onClose }) {
     setActiveTab('execute');
 
     try {
-      const result = await api.executePlaybook(pb.id, {
-        connectionId: parseInt(execConnId),
-        executionMode: pb.execution_mode || 'sequential',
-        auditorMode: pb.auditor_mode || 'none',
-      });
-      setExecEvents((prev) => [...prev, { type: 'done', data: result }]);
+      await api.executePlaybookStream(
+        pb.id,
+        {
+          connectionId: parseInt(execConnId),
+          executionMode: pb.execution_mode || 'sequential',
+          auditorMode: pb.auditor_mode || 'none',
+        },
+        (ev) => setExecEvents((prev) => [...prev, ev]),
+      );
       setExecDone(true);
       // Reload runs
-      api.request(`/playbooks/${pb.id}/runs`).then(setRuns).catch(() => {});
+      api.getPlaybookRuns(pb.id).then(setRuns).catch(() => {});
     } catch (e) {
       setExecEvents((prev) => [...prev, { type: 'error', data: { message: e.message } }]);
       setExecDone(true);
