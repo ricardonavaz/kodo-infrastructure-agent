@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { inlineFormat } from '../../utils/formatMessage.jsx';
 
 export default function DataTable({ block }) {
   const { headers = [], rows = [], filterable } = block;
@@ -72,7 +73,7 @@ export default function DataTable({ block }) {
                 className="sb-table-sort"
                 onClick={() => handleSort(i)}
               >
-                {header}{sortIndicator(i)}
+                <span dangerouslySetInnerHTML={{ __html: inlineFormat(String(header)) }} />{sortIndicator(i)}
               </th>
             ))}
           </tr>
@@ -81,7 +82,7 @@ export default function DataTable({ block }) {
           {processedRows.map((row, ri) => (
             <tr key={ri}>
               {row.map((cell, ci) => (
-                <td key={ci}>{cell}</td>
+                <td key={ci} dangerouslySetInnerHTML={{ __html: inlineFormat(String(cell)) }} />
               ))}
             </tr>
           ))}
