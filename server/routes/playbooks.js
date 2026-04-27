@@ -184,7 +184,7 @@ router.post('/runs/:runId/interactions/:interactionId/respond', requireRole('adm
   if (!interaction) return res.status(404).json({ error: 'Interaccion no encontrada' });
   if (interaction.status !== 'pending') return res.status(400).json({ error: 'Interaccion ya respondida' });
 
-  db.prepare('UPDATE playbook_run_interactions SET response = ?, responded_at = datetime("now"), status = ? WHERE id = ?')
+  db.prepare('UPDATE playbook_run_interactions SET response = ?, responded_at = datetime(\'now\'), status = ? WHERE id = ?')
     .run(response, 'responded', req.params.interactionId);
 
   res.json({ success: true });

@@ -124,11 +124,11 @@ async function executeTask(task) {
 
     const durationMs = Date.now() - startTime;
     db.prepare(
-      'UPDATE scheduled_task_runs SET completed_at = datetime("now"), status = ?, output = ?, error = ?, duration_ms = ? WHERE id = ?'
+      'UPDATE scheduled_task_runs SET completed_at = datetime(\'now\'), status = ?, output = ?, error = ?, duration_ms = ? WHERE id = ?'
     ).run(status, output.substring(0, 50000), error, durationMs, runId);
   }
 
-  db.prepare('UPDATE scheduled_tasks SET last_run_at = datetime("now") WHERE id = ?').run(task.id);
+  db.prepare('UPDATE scheduled_tasks SET last_run_at = datetime(\'now\') WHERE id = ?').run(task.id);
 }
 
 function tick() {

@@ -99,7 +99,7 @@ export function toggleDirective(id) {
   if (!directive) throw new Error('Directriz no encontrada');
 
   const newState = directive.enabled ? 0 : 1;
-  db.prepare('UPDATE safety_directives SET enabled = ?, updated_at = datetime("now") WHERE id = ?').run(newState, id);
+  db.prepare('UPDATE safety_directives SET enabled = ?, updated_at = datetime(\'now\') WHERE id = ?').run(newState, id);
   return { id, enabled: newState };
 }
 
