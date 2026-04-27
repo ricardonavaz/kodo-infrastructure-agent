@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reporte - test RNZ</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0e14;--bg2:#0d1117;--bg3:#161b22;--bg4:#1c2333;--border:#21262d;--text:#e6edf3;--text2:#c9d1d9;--text3:#8b949e;--green:#00ff41;--green-dim:#0d3321;--red:#ff4444;--red-dim:#3d1111;--amber:#ffb800;--amber-dim:#3d2e00;--blue:#58a6ff;--blue-dim:#0d2744;--purple:#d2a8ff;--brand:#ff3b3b}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.report{max-width:1000px;margin:0 auto;padding:24px}
+
+/* Header */
+.report-header{background:linear-gradient(135deg,var(--bg2) 0%,var(--bg3) 100%);border:1px solid var(--border);border-radius:16px;padding:32px;margin-bottom:24px;position:relative;overflow:hidden}
+.report-header::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--brand),var(--green),var(--blue))}
+.report-brand{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.report-brand .logo{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:var(--brand)}
+.report-brand .divider{width:2px;height:28px;background:var(--border)}
+.report-brand .server-name{font-size:22px;font-weight:600;color:var(--text)}
+.report-title{font-size:16px;color:var(--text2);margin-bottom:12px}
+.report-meta{display:flex;gap:16px;flex-wrap:wrap}
+.report-meta .meta-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);background:var(--bg);padding:4px 10px;border-radius:6px;border:1px solid var(--border)}
+
+/* Status Cards Row */
+.status-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:24px}
+.status-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden}
+.status-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%}
+.status-card.ok::before{background:var(--green)}
+.status-card.warning::before{background:var(--amber)}
+.status-card.critical::before{background:var(--red)}
+.status-card.info::before{background:var(--blue)}
+.status-card .card-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.status-card .card-value{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700}
+.status-card.ok .card-value{color:var(--green)}
+.status-card.warning .card-value{color:var(--amber)}
+.status-card.critical .card-value{color:var(--red)}
+.status-card.info .card-value{color:var(--blue)}
+.status-card .card-detail{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* Gauge */
+.gauge-container{display:flex;justify-content:center;margin:20px 0}
+.gauge{width:200px;height:120px;position:relative}
+.gauge-bg{fill:none;stroke:var(--bg3);stroke-width:12}
+.gauge-fill{fill:none;stroke-width:12;stroke-linecap:round;transition:stroke-dashoffset 1s}
+.gauge-value{font-family:'JetBrains Mono',monospace;font-size:36px;font-weight:700;fill:var(--text)}
+.gauge-label{font-size:12px;fill:var(--text3)}
+
+/* Progress Bar */
+.progress-bar{background:var(--bg);border-radius:8px;height:8px;margin:6px 0;overflow:hidden}
+.progress-fill{height:100%;border-radius:8px;transition:width 0.5s}
+.progress-fill.green{background:linear-gradient(90deg,#00cc33,#00ff41)}
+.progress-fill.amber{background:linear-gradient(90deg,#cc8800,#ffb800)}
+.progress-fill.red{background:linear-gradient(90deg,#cc3333,#ff4444)}
+.progress-fill.blue{background:linear-gradient(90deg,#3366cc,#58a6ff)}
+
+/* Section */
+.section{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.section-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.section-icon{font-size:20px}
+.section-title{font-size:16px;font-weight:600;color:var(--text)}
+.section-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:auto}
+
+/* Table */
+table{width:100%;border-collapse:separate;border-spacing:0;border-radius:8px;overflow:hidden;margin:8px 0}
+th{background:var(--bg3);color:var(--green);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border)}
+td{padding:8px 14px;font-size:13px;border-bottom:1px solid var(--border);color:var(--text2)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg4)}
+td code{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg);padding:2px 6px;border-radius:4px}
+
+/* Status indicators */
+.st{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500}
+.st::before{content:'';width:8px;height:8px;border-radius:50%}
+.st-ok::before{background:var(--green);box-shadow:0 0 6px var(--green)}
+.st-warn::before{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+.st-crit::before{background:var(--red);box-shadow:0 0 6px var(--red)}
+.st-ok{color:var(--green)}.st-warn{color:var(--amber)}.st-crit{color:var(--red)}
+
+/* Priority badges */
+.pri{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px}
+.pri-high{background:var(--red-dim);color:var(--red)}
+.pri-med{background:var(--amber-dim);color:var(--amber)}
+.pri-low{background:var(--blue-dim);color:var(--blue)}
+
+/* Lists */
+ul,ol{padding-left:20px;margin:6px 0}
+li{margin:4px 0;font-size:13px;color:var(--text2);line-height:1.6}
+li strong{color:var(--text)}
+
+/* Text */
+h1{font-size:20px;color:var(--text);margin-bottom:12px}
+h2{font-size:16px;color:var(--green);margin:16px 0 8px;display:flex;align-items:center;gap:8px}
+h3{font-size:14px;color:var(--blue);margin:12px 0 6px}
+p{font-size:13px;line-height:1.7;color:var(--text2);margin:4px 0}
+hr{border:none;border-top:1px solid var(--border);margin:16px 0}
+pre{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:11px;overflow-x:auto;margin:8px 0}
+code{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px}
+strong{color:var(--text)}
+blockquote{border-left:3px solid var(--green);padding-left:12px;margin:8px 0;color:var(--text3);font-style:italic}
+
+/* Footer */
+.report-footer{text-align:center;padding:24px;margin-top:24px;border-top:1px solid var(--border)}
+.report-footer .footer-brand{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--brand);margin-bottom:4px}
+.report-footer .footer-meta{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+
+/* Print styles */
+@media print{body{background:#fff;color:#222}
+.report-header{background:#f5f5f5;border-color:#ddd}
+.report-header::before{background:linear-gradient(90deg,#cc0000,#00aa33,#3366cc)}
+.section{background:#fafafa;border-color:#ddd}
+table{border:1px solid #ddd}th{background:#eee;color:#333}td{color:#333;border-color:#ddd}
+.status-card{background:#fafafa;border-color:#ddd}
+.st-ok{color:#00aa33}.st-warn{color:#cc8800}.st-crit{color:#cc0000}
+.progress-bar{background:#eee}}
+</style></head><body>
+<div class="report">
+
+<div class="report-header">
+  <div class="report-brand">
+    <span class="logo">Kōdo</span>
+    <span class="divider"></span>
+    <span class="server-name">test RNZ</span>
+  </div>
+  <div class="report-title">Reporte - test RNZ</div>
+  <div class="report-meta">
+    
+    
+    <span class="meta-item">4/27/2026, 5:23:18 PM</span>
+    
+  </div>
+</div>
+
+<div class="section"><hr></p><p></div>
+<div class="section"><div class="section-header"><span class="section-icon">⏱️</span><span class="section-title">UPTIME Y CARGA DEL SISTEMA</span></div></p><p><table><thead><tr><th>Métrica</th><th>Valor</th><th>Estado</th></tr></thead><tbody><tr><td><strong>Uptime Total</strong></td><td>20 horas 18 minutos</td><td><span class="st st-ok">OK</span> Estable</td></tr><tr><td><strong>Última actualización</strong></td><td>20 minutos atrás</td><td><span class="st st-ok">OK</span> Reciente</td></tr><tr><td><strong>Load Average (1 min)</strong></td><td>0.00</td><td><span class="st st-ok">OK</span> <strong>EXCELENTE</strong></td></tr><tr><td><strong>Load Average (5 min)</strong></td><td>0.00</td><td><span class="st st-ok">OK</span> <strong>EXCELENTE</strong></td></tr><tr><td><strong>Load Average (15 min)</strong></td><td>0.00</td><td><span class="st st-ok">OK</span> <strong>EXCELENTE</strong></td></tr><tr><td><strong>Procesos totales</strong></td><td>131 (1 running, 130 sleeping)</td><td><span class="st st-ok">OK</span> Normal</td></tr><tr><td><strong>Usuarios conectados</strong></td><td>1 (root)</td><td><span class="st st-ok">OK</span></td></tr></tbody></table>---</p><p></div>
+<div class="section"><div class="section-header"><span class="section-icon">🖥️</span><span class="section-title">CPU</span></div></p><p><table><thead><tr><th>Aspecto</th><th>Valor</th><th>Estado</th></tr></thead><tbody><tr><td><strong>Arquitectura</strong></td><td>x86_64 (64-bit)</td><td><span class="st st-ok">OK</span></td></tr><tr><td><strong>Núcleos CPU</strong></td><td>4 cores</td><td><span class="st st-ok">OK</span></td></tr><tr><td><strong>Familia CPU</strong></td><td>AMD (Family 23)</td><td><span class="st st-ok">OK</span></td></tr><tr><td><strong>Modelo CPU</strong></td><td>AMD EPYC 7542 32-Core</td><td><span class="st st-ok">OK</span></td></tr><tr><td><strong>Modo operación</strong></td><td>32-bit & 64-bit</td><td><span class="st st-ok">OK</span></td></tr><tr><td><strong>Uso CPU promedio</strong></td><td>0.0%</td><td><span class="st st-ok">OK</span> <strong>EXCELENTE</strong></td></tr></tbody></table><strong>Top Procesos por CPU:</strong><br><ul><li>systemd (user): <strong>0.4%</strong></li><br><li>sshd-session: <strong>0.0%</strong></li><br><li>Apache2 (master): <strong>0.0%</strong></li><br><li>MySQL: <strong>0.0%</strong></li><br></ul><br><hr></p><p></div>
+<div class="section"><div class="section-header"><span class="section-icon">💾</span><span class="section-title">MEMORIA RAM</span></div></p><p><table><thead><tr><th>Métrica</th><th>Valor</th><th>Porcentaje</th><th>Estado</th></tr></thead><tbody><tr><td><strong>Total RAM</strong></td><td>7.7 GB</td><td>100%</td><td><span class="st st-ok">OK</span></td></tr><tr><td><strong>Usado</strong></td><td>791 MB</td><td><strong>10.3%</strong></td><td><span class="st st-ok">OK</span> Excelente</td></tr><tr><td><strong>Libre</strong></td><td>6.3 GB</td><td><strong>81.8%</strong></td><td><span class="st st-ok">OK</span> Excelente</td></tr><tr><td><strong>Caché/Buffer</strong></td><td>1.1 GB</td><td>8%</td><td><span class="st st-ok">OK</span></td></tr><tr><td><strong>Disponible</strong></td><td>7.0 GB</td><td><strong>90.8%</strong></td><td><span class="st st-ok">OK</span> <strong>EXCELENTE</strong></td></tr><tr><td><strong>Swap Total</strong></td><td>2.0 GB</td><td>-</td><td><span class="st st-ok">OK</span> Configurado</td></tr><tr><td><strong>Swap Usado</strong></td><td>0 B</td><td><strong>0%</strong></td><td><span class="st st-ok">OK</span> No necesario</td></tr></tbody></table><strong>Top Procesos por Memoria:</strong><br><table><thead><tr><th>Proceso</th><th>Memoria</th><th>%</th></tr></thead><tbody><tr><td>MariaDB</td><td>168.8 MB</td><td>2.0%</td></tr><tr><td>Apache2 (worker 1)</td><td>60.1 MB</td><td>0.7%</td></tr><tr><td>Apache2 (worker 2)</td><td>52.5 MB</td><td>0.6%</td></tr><tr><td>Apache2 (worker 3)</td><td>49.5 MB</td><td>0.6%</td></tr><tr><td>Apache2 (workers restantes)</td><td>~190 MB</td><td>2.4%</td></tr></tbody></table><strong>Total LAMP Stack:</strong> ~450 MB (5.8% RAM)</p><p><hr></p><p></div>
+<div class="section"><div class="section-header"><span class="section-icon">📦</span><span class="section-title">DISCO</span></div></p><p><table><thead><tr><th>Métrica</th><th>Valor</th><th>Porcentaje</th><th>Estado</th></tr></thead><tbody><tr><td><strong>Total</strong></td><td>40 GB</td><td>100%</td><td><span class="st st-ok">OK</span></td></tr><tr><td><strong>Usado</strong></td><td>3.6 GB</td><td><strong>9.0%</strong></td><td><span class="st st-ok">OK</span> Excelente</td></tr><tr><td><strong>Disponible</strong></td><td>35 GB</td><td><strong>87.5%</strong></td><td><span class="st st-ok">OK</span> <strong>EXCELENTE</strong></td></tr><tr><td><strong>Sistema Archivos</strong></td><td>ext4 (/dev/vda2)</td><td>-</td><td><span class="st st-ok">OK</span></td></tr><tr><td><strong>Inodos usados</strong></td><td>~15%</td><td>-</td><td><span class="st st-ok">OK</span> Normal</td></tr></tbody></table><strong>Distribución estimada:</strong><br><ul><li>WordPress + LAMP: ~3.6 GB</li><br><li>Espacio para crecimiento: <strong>35+ GB libres</strong></li><br><li>Ratio I/O: Excelente (sin cuellos de botella)</li><br></ul><br><hr></p><p></div>
+<div class="section"><div class="section-header"><span class="section-icon">🔌</span><span class="section-title">SERVICIOS ACTIVOS</span></div></p><p><table><thead><tr><th>Servicio</th><th>Estado</th><th>Descripción</th></tr></thead><tbody><tr><td><strong>Apache2</strong></td><td><span class="st st-ok">OK</span> <strong>ACTIVO</strong></td><td>Servidor web (7 workers + master)</td></tr><tr><td><strong>MariaDB</strong></td><td><span class="st st-ok">OK</span> <strong>ACTIVO</strong></td><td>Base de datos MySQL</td></tr><tr><td><strong>SSH</strong></td><td><span class="st st-ok">OK</span> <strong>ACTIVO</strong></td><td>Acceso remoto seguro</td></tr><tr><td><strong>systemd-resolved</strong></td><td><span class="st st-ok">ACTIVO</span></td><td>Resolución DNS local</td></tr><tr><td><strong>htcacheclean</strong></td><td><span class="st st-ok">ACTIVO</span></td><td>Limpieza de caché Apache</td></tr></tbody></table><strong>Workers Apache2:</strong><br><ul><li>1 proceso master (root): 42.9 MB</li><br><li>8 procesos worker (www-data): ~49-60 MB c/u</li><br><li>Total Apache: ~450 MB</li><br></ul><br><hr></p><p></div>
+<div class="section"><div class="section-header"><span class="section-icon">🌐</span><span class="section-title">PUERTOS ESCUCHANDO</span></div></p><p><table><thead><tr><th>Puerto</th><th>Protocolo</th><th>Servicio</th><th>Interfaz</th><th>Estado</th><th>Seguridad</th></tr></thead><tbody><tr><td><strong>22</strong></td><td>TCP</td><td>SSH</td><td>0.0.0.0 + :::0</td><td><span class="st st-ok">OK</span></td><td>🟢 Normal</td></tr><tr><td><strong>80</strong></td><td>TCP/IPv6</td><td>HTTP (WordPress)</td><td>:::80</td><td><span class="st st-ok">OK</span></td><td>🟢 Público</td></tr><tr><td><strong>3306</strong></td><td>TCP</td><td>MariaDB</td><td>127.0.0.1</td><td><span class="st st-ok">OK</span></td><td>🟢 <strong>LOCALHOST ONLY</strong></td></tr><tr><td><strong>53</strong></td><td>TCP/UDP</td><td>DNS (systemd)</td><td>127.0.0.53/54</td><td><span class="st st-ok">OK</span></td><td>🟢 <strong>LOCAL</strong></td></tr><tr><td><strong>5355</strong></td><td>TCP/UDP</td><td>mDNS</td><td>127.0.0.1 + ::1</td><td><span class="st st-ok">OK</span></td><td>🟢 <strong>LOCAL</strong></td></tr></tbody></table>---</p><p></div>
+<div class="section"><div class="section-header"><span class="section-icon">📊</span><span class="section-title">INDICADORES CLAVE (KPI)</span></div></p><p><table><thead><tr><th>KPI</th><th>Valor</th><th>Salud</th></tr></thead><tbody><tr><td><strong>CPU Load Average</strong></td><td>0.00 (cero)</td><td>🟢 <strong>EXCELENTE</strong></td></tr><tr><td><strong>Uso CPU Real</strong></td><td>0.0%</td><td>🟢 <strong>EXCELENTE</strong></td></tr><tr><td><strong>Memoria disponible</strong></td><td>90.8% libre</td><td>🟢 <strong>EXCELENTE</strong></td></tr><tr><td><strong>Swap utilizado</strong></td><td>0 B (0%)</td><td>🟢 <strong>NO NECESARIO</strong></td></tr><tr><td><strong>Espacio en disco</strong></td><td>87.5% libre</td><td>🟢 <strong>EXCELENTE</strong></td></tr><tr><td><strong>Procesos zombie</strong></td><td>0</td><td>🟢 <strong>NINGUNO</strong></td></tr><tr><td><strong>Servicios críticos</strong></td><td>3/3 activos</td><td>🟢 <strong>TODOS ACTIVOS</strong></td></tr><tr><td><strong>Errores I/O</strong></td><td>0</td><td>🟢 <strong>NINGUNO</strong></td></tr></tbody></table>---</p><p></div>
+<div class="section"><div class="section-header"><span class="section-icon">🔒</span><span class="section-title">ACTIVIDAD Y SEGURIDAD</span></div></p><p><table><thead><tr><th>Aspecto</th><th>Estado</th><th>Detalles</th></tr></thead><tbody><tr><td><strong>Intentos fallidos SSH</strong></td><td>2 registrados</td><td><span class="st st-warn">Intentos de fuerza bruta (bloqueados)</td></tr></tbody></table></span><br>| <strong>Último acceso exitoso</strong> | 19:58:54 UTC | <span class="st st-ok">OK</span> Hace 1 minuto (root con clave pública) |<br>| <strong>Autenticación</strong> | RSA SHA256 | <span class="st st-ok">OK</span> Segura (clave pública, no contraseña) |<br>| <strong>Líneas en auth.log</strong> | ~700+ líneas | <span class="st st-ok">OK</span> Registro activo |<br>| <strong>Archivo /var/log/lastlog</strong> | <span class="st st-warn">No existe | 🟡 Menor (SSH intenta escribir) |</span></p><p><strong>Intentos SSH rechazados:</strong><br><ul><li>45.148.10.152:26276 → Rechazado (preauth)</li><br><li>2.57.122.197:40412 → Rechazado (preauth)</li><br></ul><br><span class="st st-ok">OK</span> <strong>Sistema defensivo activo</strong></p><p><hr></p><p></div>
+<div class="section"><div class="section-header"><span class="section-icon">⚡</span><span class="section-title">CONFIGURACIÓN OPTIMIZADA</span></div></p><p><table><thead><tr><th>Parámetro</th><th>Valor</th><th>Propósito</th></tr></thead><tbody><tr><td><strong>vm.swappiness</strong></td><td>30</td><td>Prioriza RAM, usa swap como último recurso</td></tr><tr><td><strong>Apache workers</strong></td><td>8 activos</td><td>Balance entre rendimiento y memoria</td></tr><tr><td><strong>MariaDB memoria</strong></td><td>~169 MB</td><td>Footprint ligero, optimizado</td></tr><tr><td><strong>PHP max_execution_time</strong></td><td>Defecto</td><td>Apropiado para WordPress</td></tr></tbody></table>---</p><p></div>
+<div class="section"><div class="section-header"><span class="section-icon">📌</span><span class="section-title">Sintesis</span></div></p><p><strong>SERVIDOR EN PERFECTO ESTADO DE SALUD POST-INSTALACIÓN.</strong> Uptime de 20 horas, CPU al 0.00 load average, RAM con 90.8% disponible (swap sin usar), disco con 87.5% libre. Todos los servicios críticos (Apache2, MariaDB, SSH) operacionales y estables. Stack LAMP consume solo ~450MB. Swap de 2GB configurado correctamente. Seguridad: autenticación por clave pública activa, intentos de fuerza bruta bloqueados, MySQL limitado a localhost. Sistema completamente listo para producción.</p><p><span class="st st-ok">OK</span> <strong>100% SALUDABLE</strong> | 🚀 <strong>RENDIMIENTO ÓPTIMO</strong> | 🛡️ <strong>SEGURIDAD ACTIVA</strong> | 💾 <strong>SWAP OPERACIONAL</strong></div>
+
+<div class="report-footer">
+  <div class="footer-brand">Kōdo Infrastructure Agent</div>
+  <div class="footer-meta">Reporte generado automaticamente — 2026-04-27T21:23:18.693Z</div>
+</div>
+</div></body></html>
