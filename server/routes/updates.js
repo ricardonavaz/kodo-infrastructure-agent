@@ -93,7 +93,7 @@ router.post('/apply/:connectionId', requireRole('admin', 'operator'), async (req
     );
 
     db.prepare(
-      'UPDATE update_executions SET completed_at = datetime("now"), status = ?, output = ?, requires_reboot = ?, error = ? WHERE id = ?'
+      'UPDATE update_executions SET completed_at = datetime(\'now\'), status = ?, output = ?, requires_reboot = ?, error = ? WHERE id = ?'
     ).run(
       result.success ? 'success' : 'failed',
       (result.output || '').substring(0, 50000),

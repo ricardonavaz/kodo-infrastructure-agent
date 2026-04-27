@@ -162,7 +162,7 @@ export async function executePlaybook(playbookId, connectionId, variables, sshCo
 
   // Update run record
   db.prepare(
-    'UPDATE playbook_runs SET completed_at = datetime("now"), status = ?, step_results = ?, auditor_log = ? WHERE id = ?'
+    'UPDATE playbook_runs SET completed_at = datetime(\'now\'), status = ?, step_results = ?, auditor_log = ? WHERE id = ?'
   ).run(overallStatus, JSON.stringify(stepResults), JSON.stringify(auditorLog), runId);
 
   emit('playbook_complete', { runId, playbook: pb.name, status: overallStatus, steps: stepResults.length });
@@ -293,7 +293,7 @@ async function executeApprovalGate(step, runId, stepIndex, emit) {
   });
 
   // Update run as paused
-  db.prepare('UPDATE playbook_runs SET paused_at = datetime("now"), paused_reason = ? WHERE id = ?')
+  db.prepare('UPDATE playbook_runs SET paused_at = datetime(\'now\'), paused_reason = ? WHERE id = ?')
     .run(step.text || step.name, runId);
 
   // Poll for response
