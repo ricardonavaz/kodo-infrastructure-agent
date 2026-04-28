@@ -62,18 +62,26 @@ El renderer unificado vive en `client/src/utils/formatMessage.jsx` reemplazando 
 
 **Justificación:** un solo punto de verdad en filesystem. Path de imports ya existe y todos lo usan. Simplicidad sobre granularidad.
 
-### Decisión 2 — API mantenida: COMPATIBILIDAD TOTAL
+### Decisión 2 — API ajustada: STRING RETURN + dangerouslySetInnerHTML EN 7 CALLERS
 
-`formatMessage.jsx` mantiene exports actuales:
+> **Corrección aplicada 2026-04-28 durante implementación de B3.2.** La cláusula original "cero modificaciones requeridas en componentes" era inviable: la implementación previa de `formatMessage` retornaba arreglo de elementos React, y migrar a `marked.parse` (que retorna string HTML) requiere actualizar a los callers.
+
+`formatMessage.jsx` mantiene exports actuales pero **cambia el tipo de retorno de `formatMessage` a string**:
 
 ```javascript
-export function inlineFormat(str)       // texto inline (sin <p>)
-export function formatMessage(text)     // texto completo (con párrafos, tablas, etc.)
+export function inlineFormat(str)       // retorna string HTML sanitizado (sin <p>)
+export function formatMessage(text)     // retorna string HTML sanitizado (con párrafos, tablas, etc.)
 ```
 
-Cambio interno transparente. Cero modificaciones requeridas en componentes que importan estas funciones.
+Ambos retornan string sanitizado. Simétrico.
 
-**Justificación:** reduce superficie de cambio. Si la implementación interna funciona, los callers no deben enterarse.
+**Total: 7 sitios en 6 archivos** que llamaban `<div>{formatMessage(x)}</div>` migran a `<div dangerouslySetInnerHTML={{ __html: formatMessage(x) }} />`. Componentes afectados: SmartMessage, TextBlock, Finding (×3 sitios), Recommendation, SummaryCard, QuestionPrompt.
+
+**Costo de la corrección:** la cláusula original "cero modificaciones requeridas en componentes" se rompe parcialmente. Pero Decisión 4 ya excluyó componentes con `inlineFormat` ("DataTable, Finding, etc.: sin cambios"). Esos siguen sin cambios. Lo que cambia son los 7 sitios de `formatMessage`.
+
+**Lección de proceso:** asunciones técnicas en el documento de diseño deben validarse contra implementación real ANTES de comprometer scope. Pausa de Claude Code antes de implementar B3.2 fue ejemplo de buen proceso — detectó la contradicción y permitió ajuste consciente vs hack improvisado.
+
+**Justificación:** simetría entre `inlineFormat` y `formatMessage` (ambos retornan string sanitizado). El patrón `dangerouslySetInnerHTML` ya existe en codebase para consumidores de `inlineFormat`.
 
 ### Decisión 3 — Markers [ACTION]: RENDERER CUSTOM MÍNIMO (B8 parcial)
 
