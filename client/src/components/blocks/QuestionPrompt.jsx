@@ -101,7 +101,10 @@ export default function QuestionPrompt({ block, onAction }) {
 
   return (
     <div className="sb-question">
-      <div className="sb-question-text">{formatMessage(question)}</div>
+      <div
+        className="sb-question-text"
+        dangerouslySetInnerHTML={{ __html: formatMessage(question) }}
+      />
       {renderInput()}
     </div>
   );

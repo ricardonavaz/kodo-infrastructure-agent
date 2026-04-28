@@ -35,7 +35,10 @@ export default function Finding({ block }) {
       </div>
 
       {description && (
-        <div className="sb-finding-desc">{formatMessage(description)}</div>
+        <div
+          className="sb-finding-desc"
+          dangerouslySetInnerHTML={{ __html: formatMessage(description) }}
+        />
       )}
 
       {impact && (
@@ -47,7 +50,10 @@ export default function Finding({ block }) {
             {showImpact ? '▾' : '▸'} Impacto
           </button>
           {showImpact && (
-            <div className="sb-finding-content">{formatMessage(impact)}</div>
+            <div
+              className="sb-finding-content"
+              dangerouslySetInnerHTML={{ __html: formatMessage(impact) }}
+            />
           )}
         </div>
       )}
@@ -68,7 +74,8 @@ export default function Finding({ block }) {
 
       {remediation && (
         <div className="sb-finding-remediation">
-          <strong>Remediacion:</strong> {formatMessage(remediation)}
+          <strong>Remediacion:</strong>
+          <div dangerouslySetInnerHTML={{ __html: formatMessage(remediation) }} />
         </div>
       )}
     </div>
