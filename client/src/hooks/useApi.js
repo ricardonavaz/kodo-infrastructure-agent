@@ -55,7 +55,9 @@ function buildQuery(params) {
 
 /**
  * Start a chat job and stream SSE events.
- * Returns { jobId, eventSource } where eventSource is the SSE connection.
+ * Returns { jobId, eventSource, donePromise } immediately after EventSource
+ * is created. Caller saves eventSource for cleanup (e.g. on server switch)
+ * and awaits donePromise if it needs the final result.
  */
 async function chatStream(connectionId, message, model, onEvent, sessionId) {
   // 1. Start job
@@ -65,10 +67,14 @@ async function chatStream(connectionId, message, model, onEvent, sessionId) {
   });
 
   // 2. Connect to SSE stream
-  return new Promise((resolve, reject) => {
-    const token = localStorage.getItem('kodo_token');
-    const url = `${BASE}/agent/${connectionId}/jobs/${jobId}/stream${token ? '?token=' + token : ''}`;
-    const eventSource = new EventSource(url);
+  const token = localStorage.getItem('kodo_token');
+  const url = `${BASE}/agent/${connectionId}/jobs/${jobId}/stream${token ? '?token=' + token : ''}`;
+  const eventSource = new EventSource(url);
+
+  // 3. Wrap event handling in a promise that resolves on done/error.
+  //    Returned alongside the eventSource so caller can decide whether to
+  //    await completion or only hold the handle for cleanup.
+  const donePromise = new Promise((resolve, reject) => {
     let resolved = false;
 
     eventSource.onmessage = (event) => {
@@ -91,7 +97,6 @@ async function chatStream(connectionId, message, model, onEvent, sessionId) {
       eventSource.close();
       if (!resolved) {
         resolved = true;
-        // Fetch job status in case it completed while we were disconnected
         request(`/agent/${connectionId}/jobs/${jobId}`)
           .then((job) => {
             if (job.status === 'completed') {
@@ -101,7 +106,6 @@ async function chatStream(connectionId, message, model, onEvent, sessionId) {
               onEvent({ type: 'error', data: { message: job.error } });
               reject(new Error(job.error));
             } else {
-              // Still running - emit reconnecting event
               onEvent({ type: 'reconnecting', data: { jobId } });
               resolve({ jobId, reconnecting: true });
             }
@@ -110,10 +114,17 @@ async function chatStream(connectionId, message, model, onEvent, sessionId) {
       }
     };
   });
+
+  return { jobId, eventSource, donePromise };
 }
 
 /**
- * Reconnect to an active job - fetch past events + connect to stream
+ * Reconnect to an active job - fetch past events + connect to stream.
+ * Returns shape varies:
+ *   - If job already completed/errored: { jobId, result } or { jobId, error }
+ *     (no eventSource, nothing to clean up).
+ *   - If job still running: { jobId, eventSource, donePromise } so caller
+ *     can hold the handle for cleanup on server switch.
  */
 async function reconnectToJob(connectionId, jobId, onEvent) {
   // Get past events
@@ -135,11 +146,11 @@ async function reconnectToJob(connectionId, jobId, onEvent) {
   }
 
   // Still running - connect to stream for new events
-  return new Promise((resolve) => {
-    const token = localStorage.getItem('kodo_token');
-    const url = `${BASE}/agent/${connectionId}/jobs/${jobId}/stream${token ? '?token=' + token : ''}`;
-    const eventSource = new EventSource(url);
+  const token = localStorage.getItem('kodo_token');
+  const url = `${BASE}/agent/${connectionId}/jobs/${jobId}/stream${token ? '?token=' + token : ''}`;
+  const eventSource = new EventSource(url);
 
+  const donePromise = new Promise((resolve) => {
     eventSource.onmessage = (event) => {
       try {
         const parsed = JSON.parse(event.data);
@@ -156,6 +167,8 @@ async function reconnectToJob(connectionId, jobId, onEvent) {
       resolve({ jobId });
     };
   });
+
+  return { jobId, eventSource, donePromise };
 }
 
 export const api = {

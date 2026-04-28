@@ -212,6 +212,10 @@ export default function Terminal({ connection, connectionStatus, connectionLogs,
   const [activeSession, setActiveSession] = useState(null);
   const [briefingShown, setBriefingShown] = useState(false);
 
+  // Holds the live SSE EventSource so we can close it when switching servers
+  // or unmounting. Prevents events of one server from leaking into another's feed.
+  const activeStreamRef = useRef(null);
+
   const status = connectionStatus?.status || 'disconnected';
   const isConnected = status === 'connected';
 
@@ -224,6 +228,12 @@ export default function Terminal({ connection, connectionStatus, connectionLogs,
   }, [briefing, isConnected]);
 
   useEffect(() => {
+    // Close any active SSE stream from the previous server before switching
+    if (activeStreamRef.current) {
+      activeStreamRef.current.close();
+      activeStreamRef.current = null;
+    }
+
     // Reset ALL state when switching servers
     setMessages([]);
     setInput('');
@@ -238,6 +248,14 @@ export default function Terminal({ connection, connectionStatus, connectionLogs,
       checkActiveJobs();
       api.getActiveSession(connection.id).then(setActiveSession).catch(() => setActiveSession(null));
     }
+
+    // Cleanup on unmount or before next effect run
+    return () => {
+      if (activeStreamRef.current) {
+        activeStreamRef.current.close();
+        activeStreamRef.current = null;
+      }
+    };
   }, [connection?.id]);
 
   useEffect(() => {
@@ -296,12 +314,18 @@ export default function Terminal({ connection, connectionStatus, connectionLogs,
         setTimeout(() => setReconnected(false), 3000);
 
         // Reconnect to the job stream
-        await api.reconnectToJob(connection.id, job.id, (event) => {
+        const result = await api.reconnectToJob(connection.id, job.id, (event) => {
           handleStreamEvent(event);
         });
 
-        setLoading(false);
-        setStreamStatus(null);
+        if (result?.eventSource) {
+          // Stream still running - hold the handle so we can close it on server switch
+          activeStreamRef.current = result.eventSource;
+        } else {
+          // Job already finished - reset UI state (no live stream to wait on)
+          setLoading(false);
+          setStreamStatus(null);
+        }
       }
     } catch { /* no active jobs */ }
   };
@@ -341,6 +365,7 @@ export default function Terminal({ connection, connectionStatus, connectionLogs,
         setLoading(false);
         setStreamStatus(null);
         setActiveJobId(null);
+        activeStreamRef.current = null;
         break;
       case 'error':
       case 'cancelled':
@@ -353,6 +378,7 @@ export default function Terminal({ connection, connectionStatus, connectionLogs,
         setLoading(false);
         setStreamStatus(null);
         setActiveJobId(null);
+        activeStreamRef.current = null;
         break;
     }
   };
@@ -368,7 +394,8 @@ export default function Terminal({ connection, connectionStatus, connectionLogs,
     onNewChat?.();
 
     try {
-      const { jobId } = await api.chatStream(connection.id, msg, sessionModel, handleStreamEvent, sessionId);
+      const { jobId, eventSource } = await api.chatStream(connection.id, msg, sessionModel, handleStreamEvent, sessionId);
+      activeStreamRef.current = eventSource;
       setActiveJobId(jobId);
     } catch (err) {
       setMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${err.message}` }]);
@@ -394,7 +421,10 @@ export default function Terminal({ connection, connectionStatus, connectionLogs,
     onNewChat?.();
 
     api.chatStream(connection.id, suggestion, sessionModel, handleStreamEvent, sessionId)
-      .then(({ jobId }) => setActiveJobId(jobId))
+      .then(({ jobId, eventSource }) => {
+        activeStreamRef.current = eventSource;
+        setActiveJobId(jobId);
+      })
       .catch((err) => {
         setMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${err.message}` }]);
         setLoading(false);

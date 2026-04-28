@@ -250,7 +250,17 @@ router.post('/:connectionId/chat', requireRole('admin', 'operator'), async (req,
 
 // GET: SSE stream for a job
 router.get('/:connectionId/jobs/:jobId/stream', (req, res) => {
-  const { jobId } = req.params;
+  const { connectionId, jobId } = req.params;
+
+  // Validate that the job belongs to this connection. Prevents cross-server
+  // feed contamination (a stale stream from connA being requested via connB's URL).
+  const job = db.prepare('SELECT status, result, error, connection_id FROM active_jobs WHERE id = ?').get(jobId);
+  if (!job) {
+    return res.status(404).json({ error: 'Job no encontrado' });
+  }
+  if (String(job.connection_id) !== String(connectionId)) {
+    return res.status(404).json({ error: 'Job no pertenece a esta conexion' });
+  }
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -259,7 +269,6 @@ router.get('/:connectionId/jobs/:jobId/stream', (req, res) => {
   res.flushHeaders();
 
   // Check if job already completed
-  const job = db.prepare('SELECT status, result, error FROM active_jobs WHERE id = ?').get(jobId);
   if (job?.status === 'completed') {
     res.write(`data: ${JSON.stringify({ type: 'done', data: JSON.parse(job.result) })}\n\n`);
     res.end();
