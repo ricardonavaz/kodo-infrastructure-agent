@@ -48,5 +48,10 @@ export default function SmartMessage({ blocks, content, onAction, connectionId }
     );
   }
 
-  return <div className="sb-smart-message">{formatMessage(content)}</div>;
+  return (
+    <div
+      className="sb-smart-message"
+      dangerouslySetInnerHTML={{ __html: formatMessage(content) }}
+    />
+  );
 }

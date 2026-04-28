@@ -22,7 +22,10 @@ export default function Recommendation({ block, onAction }) {
         </span>
       </div>
 
-      <div className="sb-recommendation-desc">{formatMessage(description)}</div>
+      <div
+        className="sb-recommendation-desc"
+        dangerouslySetInnerHTML={{ __html: formatMessage(description) }}
+      />
 
       {risk && (
         <div className="sb-recommendation-risk">

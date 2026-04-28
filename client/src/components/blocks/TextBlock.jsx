@@ -5,7 +5,12 @@ export default function TextBlock({ block }) {
   const { content, format } = block;
 
   if (format === 'markdown' || !format) {
-    return <div className="sb-text-block">{formatMessage(content)}</div>;
+    return (
+      <div
+        className="sb-text-block"
+        dangerouslySetInnerHTML={{ __html: formatMessage(content) }}
+      />
+    );
   }
 
   return (

@@ -25,7 +25,10 @@ export default function SummaryCard({ block }) {
       {highlights.length > 0 && (
         <ul className="sb-summary-highlights">
           {highlights.map((item, i) => (
-            <li key={i}>{formatMessage(item)}</li>
+            <li
+              key={i}
+              dangerouslySetInnerHTML={{ __html: formatMessage(item) }}
+            />
           ))}
         </ul>
       )}
