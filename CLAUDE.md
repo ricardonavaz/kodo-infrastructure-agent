@@ -1,157 +1,178 @@
-# CLAUDE.md — Kodo Infrastructure Agent
+# CLAUDE.md — Notas para Claude Code
 
-Este archivo te da contexto persistente entre sesiones. Leelo completo
-al inicio de cada sesion de trabajo en este repo.
+## Como leer este archivo
 
----
+Este archivo es la guia operacional para Claude Code trabajando en KODO
+Infrastructure Agent. Lee este archivo COMPLETO antes de cada sesion. Si
+hay conflicto entre instrucciones, prevalece el plan estrategico vinculante
+del 28 abril.
 
-## Que es Kodo
+## Plan estrategico vinculante
 
-Kodo es una plataforma de gestion de infraestructura impulsada por IA
-(Claude de Anthropic). Permite administrar servidores Linux y Windows
-mediante lenguaje natural en espanol, a traves de conexiones SSH. La
-interfaz esta en espanol con tema oscuro profesional.
+El plan vinculante actual esta en:
 
-Stack: Node.js 18+ (ES Modules) + Express 4.21 + React 18.3 + Vite 6
-+ SQLite (better-sqlite3) + Anthropic SDK + node-ssh. Se despliega en
-Windows Server con IIS como reverse proxy y NSSM como servicio.
+`docs/architecture/2026-04-28-clasificacion-7-ideas.md`
 
-Repo: https://github.com/ricardonavaz/kodo-infrastructure-agent
+Ese documento procesa 32 items de 7 IDEAs estrategicas, cierra 5 decisiones
+arquitecturales, y define 11 bloques secuenciales con estimados (7-12 meses
+a MVP a 20h/semana).
 
----
+NO improvisar orden de trabajo. NO comenzar bloques fuera de orden sin
+autorizacion explicita de Ricardo. Siempre consultar ese plan + estado
+actual del sprint en curso antes de proponer trabajo.
 
-## Plan de trabajo actual — Stream 1 y Stream 2
+## Plan de 11 bloques con estado actual
 
-Estamos ejecutando un plan paso a paso para (1) estabilizar y mejorar
-el codigo actual (Stream 1) y (2) evolucionar el sistema de "respuestas
-semanticas" al Rich Response Layer Schema v1.1 (Stream 2).
+| #   | Bloque                                              | Estimado          | Estado       |
+| --- | --------------------------------------------------- | ----------------- | ------------ |
+| 1   | P7.1 — Bug cross-server feed contamination          | 2-4h              | COMPLETO     |
+| 2   | Decision-Rendering (Camino A) sesion tecnica        | 1h                | COMPLETO     |
+| 3   | Sprint rendering markdown unificado                 | 12-21h (1 sem)    | EN CURSO 6/7 |
+| 4   | P2 expandido completo                               | 50-70h (3 sem)    | PENDIENTE    |
+| 5   | P1 — Sesion Operativa                               | 15-25h (1.5 sem)  | PENDIENTE    |
+| 6   | P6 — Comportamiento Agentico + Modo Didactico       | 30-50h (2 sem)    | PENDIENTE    |
+| 7   | P3 + P4 Multi-Servidor + Pantalla Consolidada       | 30h (1.5 sem)     | PENDIENTE    |
+| 8   | P7-NEW Connection Management                        | 30h (1.5 sem)     | PENDIENTE    |
+| 9   | P5 Tareas Programadas + LearnOps                    | 80-100h (5 sem)   | PENDIENTE    |
+| 10  | Sistema de Diseño completo                          | 160-320h (8 sem)  | PENDIENTE    |
+| 11  | P3.1 Reporte Premium ejecutivo                      | 120-200h (5 sem)  | PENDIENTE    |
 
-La spec de referencia vive en docs/rich-response-layer-spec-v1.1.md.
-El diagnostico inicial del codigo vive en docs/rrl-diagnostic-report.md.
+## Sprint Bloque 3 — estado detallado
 
-Orden del plan:
+| Sub-paso | Descripcion                                | Estado    | Commit  |
+| -------- | ------------------------------------------ | --------- | ------- |
+| B3.1     | Setup deps (marked + DOMPurify)            | COMPLETO  | b4184b7 |
+| B3.2     | Reescritura formatMessage.jsx              | COMPLETO  | 0ef7734 |
+| B3.3     | Eliminar duplicacion Terminal.jsx          | COMPLETO  | 3c9d08c |
+| B3.4     | ACTION pills + modal + Fix C               | COMPLETO  | 5efc2b0 |
+| B3.5     | Refactor sistemico ExecutionPanel          | COMPLETO  | 5f611c5 |
+| B3.6     | Verificacion visual                        | COMPLETO  | (cubierto durante sprint) |
+| B3.7     | Documentacion de cierre del sprint         | PENDIENTE | -       |
 
-- Paso A1 — Arreglar model router (HECHO, commit fe2627c)
-- Paso A2 — Activar prompt caching en ai.js (EN CURSO)
-- Paso A3 — Tests al parser semantico
-- Paso B1 — Adapter legacy → RRL Schema v1.1
-- Paso B2 — Bloques RRL nuevos simples (heading, quote, keyPoint,
-  expandable, checklist, exportHint)
-- Paso C1 — Hipertexto semantico (choiceGroup y actionBar clicables
-  con prompts pre-construidos)
-- Paso C2 — Bloque diagram con Mermaid.js
-- Paso C3 — Bloques visuales (chart, comparison, timeline)
+## Inbox estrategico
 
-Cada paso se trabaja en su propia rama con su propio commit. No saltes
-pasos. Si un paso requiere sub-pasos (ej: A2.1, A2.2), pausa entre
-ellos y espera autorizacion.
+`docs/inbox/2026-04-27-ideas.md` contiene IDEAs estrategicas con decisiones
+arquitecturales diferidas. Al 29 abril hay 11 IDEAs capturadas. Consultar
+antes de tomar decisiones que puedan colisionar.
 
----
+### IDEAs criticas
 
-## Disciplinas no negociables
+**IDEA #11 — blocks vs markdown rendering divergence:**
+Cuando se inicie Bloque 4 (P2 expandido), REVERTIR Fix C en
+Terminal.jsx case 'done' del handleStreamEvent. Fix C es workaround
+temporal documentado.
 
-### Pruebas primero
-El proyecto usa node:test + node:assert como framework de testing (no
-instalar Jest/Vitest). Los tests del servidor viven en
-`server/services/__tests__/`. Se corren con `npm test` desde `server/`.
+**IDEA #9 — Knowledge Base / LearnOps reingenieria:**
+Insight estrategico fundamental sobre como el sistema de KB de KODO debe
+funcionar. Reframe parcial del scope de IDEA #4 (LearnOps). Decision
+arquitectural mayor diferida.
 
-### No improvises dependencias
-El stack esta fijado. No agregues librerias sin pedirme permiso
-describiendo: que hace, por que las existentes no bastan, peso en
-bundle, mantenimiento activo.
+**IDEA #10 — Panel "En Vivo" pierde historial:**
+Bug funcional + decision arquitectural sobre semantica En Vivo vs
+Historial. Pertenece a Bloque 5 (P1 Sesion Operativa).
 
-### No borres codigo sin explicar
-Si borras mas de 10 lineas, el commit message explica por que.
+## Bugs activos pendientes de captura
 
-### Commits pequenos, mensajes densos
-Formato: `tipo(scope): resumen`. Tipos: feat, fix, refactor, test,
-docs, chore. Primera linea < 72 chars. Cuerpo explica el porque.
+Bugs identificados en sesion 29 abril madrugada, pendientes de captura
+formal al inbox:
 
-### Nunca expongas claves
-No hay ANTHROPIC_API_KEY hardcoded. La API key se lee de la tabla
-`settings` en la BD. Nunca la pongas en codigo, .env.example, tests
-ni commits.
+1. Bug B — Agente comunica autonomia que no tiene
+   ("reconectando automaticamente..." cuando NO reconecta)
+   Severidad: ALTA. Fix futuro en Bloque 6 (P6) via prompts/playbooks/KB.
 
-### Tipos semanticos
-El proyecto es JS puro (no TypeScript). No introduzcas TypeScript
-salvo autorizacion explicita. No uses `// eslint-disable` para
-silenciar errores; arreglalos.
+2. Bug C — Botones Acciones Sugeridas overflow ancho del feed
+   Severidad: MEDIA. Fix CSS trivial 15-30 min.
 
----
+3. Hallazgo — Pildoras [ACTION:] aparecen en panel lateral expandido pero
+   no son clickeables (no hay handler de event delegation alli).
+   Severidad: BAJA. Decision arquitectural diferida.
 
-## Git workflow — disciplina de ramas
+## Decisiones arquitecturales vinculantes (28 abril)
 
-Reglas no negociables para commits en este repo:
+D1 — P2 expandido completo (50-70h, NO dividido en sub-fases)
+D2 — Crear Primitiva 7: Connection Management (~30h)
+D3 — Sistema de Diseño antes de continuar primitivas P3+ (160-320h, 4-8 sem
+     dedicadas) — Camino C hibrido: shadcn/ui + Lucide + tokens KODO
+D4 — Rendering Camino A consolidar (B3 completara)
+D5 — Orden de 11 bloques confirmado
 
-1. **Nunca commits directos a `main`.** Toda tarea arranca en una rama
-   nueva creada desde `main` actualizado.
+## Reglas operacionales del repo
 
-2. **Nombre de rama:** `rrl/paso-{id}-{slug-corto}` para tareas del
-   plan RRL (ejemplo: `rrl/paso-a2-prompt-caching`), o
-   `fix/{slug}` / `feat/{slug}` / `refactor/{slug}` para cualquier
-   otro trabajo.
+- Nunca commit directo a main — siempre rama nueva con formato
+  `rrl/paso-{id}-{slug}`
+- Nunca `git commit` ni `git push` sin autorizacion explicita de Ricardo
+- Despues de un commit + merge a main exitoso, eliminar la rama local y
+  remota como parte del cleanup
+- Tests backend con `node:test` (no Jest/Vitest), corren con `npm test`
+  desde `server/`
+- Tests frontend con vitest desde `client/`
+- Sin nuevas dependencias sin permiso explicito
+- JS puro (no TypeScript)
+- Despues de refactor que toca shared utilities, verificacion visual
+  requiere reinicio completo de servicios (no solo hard refresh) por
+  posible cache HMR
 
-3. **Antes de crear rama nueva:** verifica que estas en main limpio y
-   actualizado. Ejecuta: `git checkout main && git pull origin main &&
-   git status`. Working tree debe estar limpio.
+## Disciplina de proceso
 
-4. **Un paso del plan = una rama = uno o varios commits dentro de la
-   rama.** Nunca mezcles dos pasos del plan en la misma rama.
+- Subpasos: analisis -> implementacion -> verificacion visual -> commit
+  -> merge
+- Captura tangencial automatica al inbox cuando aparecen ideas o bugs
+  durante el trabajo
+- Documentacion como infraestructura: cada decision arquitectural mayor
+  produce documento en docs/architecture/
+- Estimados honestos (rangos, no numeros unicos)
+- Ricardo decide pivotes, no Claude Code
 
-5. **Nunca ejecutes `git commit` ni `git push` sin autorizacion
-   explicita del usuario en la conversacion.** El usuario te dira
-   "autorizado para commit" o "autorizado para push". Sin esa frase,
-   no ejecutas.
+## Tono y comunicacion
 
-6. **Antes de cada commit, muestra:** el resultado de `git status`,
-   el mensaje exacto del commit que vas a hacer, y la rama en la que
-   estas.
+- Sin emojis en commits, codigo, ni comunicacion tecnica
+- Comunicacion directa, sin halagos ni adulaciones
+- Cuando hay conflicto entre opciones, articularlo claramente y pedir
+  decision en lugar de improvisar
+- Cuando se identifica un bug, primero diagnosticar profundamente antes
+  de proponer fix
 
-7. **Merge a main:** solo el usuario lo hace. Tu trabajo termina
-   cuando la rama tiene el commit pusheado y los tests pasando. No
-   intentes mergear ni crear PR tu mismo salvo que el usuario te
-   autorice explicitamente.
+## Plan tactico anterior (REFERENCIA HISTORICA - PARCIALMENTE OBSOLETO)
 
-8. **Si detectas que estas por violar alguna de estas reglas** (por
-   ejemplo, estas en main y el usuario te pide hacer commit): pausa,
-   avisa al usuario, y propon la correccion (crear rama primero)
-   antes de actuar.
+El plan A1/A2/A3 (Model router, Prompt caching, Tests del parser semantico)
+y B1/B2/C1/C2/C3 (Adapter legacy, RRL Schema v1.1, Hipertexto, Mermaid,
+bloques visuales) era valido antes del 28 abril. La spec RRL sigue vigente
+como referencia de "que construir", pero el orden lo dicta ahora el plan
+de 11 bloques.
 
----
+Items potencialmente recuperables del plan tactico viejo:
+- Tests al parser semantico (A3) -> probablemente parte de Bloque 4 P2 expandido
+- RRL Schema v1.1 -> contrato de blocks definido en Bloque 4
+- Hipertexto + Mermaid + bloques visuales (C1-C3) -> distribuido en Bloques 4
+  y 11
 
-## Protocolo de trabajo
+## Cronotipo del operador
 
-### Al empezar una tarea
-1. Lee el paso que te pidieron completo antes de tocar codigo.
-2. Identifica si la spec RRL o el diagnostico aplican. Citalos si si.
-3. Para tareas de codigo nuevo: escribe primero los tests (rojos),
-   luego implementa hasta que pasen, luego refactoriza.
-4. Para modificaciones de codigo existente: entiende que se va a
-   romper antes de romperlo.
+Ricardo opera con cronotipo nocturno (productivo desde 14:00 hasta madrugada).
+NO equivale a fatiga. Recalibrar logica de horarios — no asumir que noche =
+dormir.
 
-### Cuando dudas
-Pregunta antes de improvisar. Es mejor perder 2 minutos preguntando
-que 2 horas deshaciendo.
+## Estado de salud del proyecto
 
-### Cuando hay desacuerdo con la spec o el plan
-Escribe un comentario con: cita textual, por que crees que esta mal,
-propuesta concreta. No cambies la spec ni el plan por tu cuenta.
+- Tests: 163 backend / 61 frontend / 224 total
+- Bundle frontend: 373.45 KB JS / 64.06 KB CSS
+- Inbox: 11 IDEAs estrategicas capturadas
+- Documentacion: plan vinculante 28 abril + plan tecnico Bloque 3 +
+  funcionalidad central
+- Working tree limpio salvo client/docs/ (preexistente untracked)
 
----
+## Ultimos commits relevantes
 
-## Anti-patrones prohibidos
-
-- Commits directos a main.
-- Instalar dependencias sin autorizacion.
-- `// eslint-disable` sin comentario justificando y plan para removerlo.
-- `catch { }` vacio. Siempre loguea o re-lanza.
-- Silenciar errores de test borrando el test.
-- Mezclar dos pasos del plan en una rama.
-- Ejecutar git commit o git push sin autorizacion explicita.
-- Hacer el paso siguiente antes de que el usuario autorice avanzar.
-
----
-
-Fin de CLAUDE.md. Leelo al inicio de cada sesion. Ante conflicto entre
-este archivo y la spec RRL: gana la spec para "que construir"; gana
-este archivo para "como trabajar".
+5efc2b0 Merge B3.4 + Fix C
+349fbd2 feat(action-buttons): pills + modal + Fix C (B3.4)
+ea00b62 Merge IDEA #11
+6496512 docs(inbox): IDEA #11
+de9724f Merge IDEA #10
+19de83a docs(inbox): IDEA #10
+0fda8f6 Merge IDEA #9
+12d6127 docs(inbox): IDEA #9
+5f611c5 Merge B3.5
+3c5d790 refactor(execution-panel): B3.5
+3c9d08c Merge B3.3
+4015062 refactor(terminal): B3.3
+10dcb22 fix(connections): cross-server feed contamination (Bloque 1)
