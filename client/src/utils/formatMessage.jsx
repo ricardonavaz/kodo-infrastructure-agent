@@ -14,6 +14,61 @@ DOMPurify.addHook('afterSanitizeAttributes', (node) => {
   }
 });
 
+// Custom marked extension to convert [ACTION: text] markers into clickable
+// pill buttons. The pills use class "md-action-marker" for CSS styling and
+// data-action-text attribute carrying the action text. Click handler is
+// attached via event delegation in the consumer component (SmartMessage).
+//
+// Two extensions: block-level (own line) and inline-level (mid-paragraph).
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+marked.use({
+  extensions: [{
+    name: 'actionMarkerBlock',
+    level: 'block',
+    start(src) { return src.match(/\[ACTION:/)?.index; },
+    tokenizer(src) {
+      const match = /^\[ACTION:\s*([^\]]+)\]\s*\n?/.exec(src);
+      if (match) {
+        return {
+          type: 'actionMarkerBlock',
+          raw: match[0],
+          text: match[1].trim(),
+        };
+      }
+    },
+    renderer(token) {
+      const escaped = escapeHtml(token.text);
+      return `<button type="button" class="md-action-marker" data-action-text="${escaped}">⚡ ${escaped}</button>`;
+    },
+  }, {
+    name: 'actionMarkerInline',
+    level: 'inline',
+    start(src) { return src.match(/\[ACTION:/)?.index; },
+    tokenizer(src) {
+      const match = /^\[ACTION:\s*([^\]]+)\]/.exec(src);
+      if (match) {
+        return {
+          type: 'actionMarkerInline',
+          raw: match[0],
+          text: match[1].trim(),
+        };
+      }
+    },
+    renderer(token) {
+      const escaped = escapeHtml(token.text);
+      return `<button type="button" class="md-action-marker" data-action-text="${escaped}">⚡ ${escaped}</button>`;
+    },
+  }]
+});
+
 const SANITIZE_CONFIG = {
   ALLOWED_TAGS: [
     'strong', 'em', 'code', 'b', 'i', 'u', 'del', 's',
@@ -22,9 +77,9 @@ const SANITIZE_CONFIG = {
     'ul', 'ol', 'li',
     'table', 'thead', 'tbody', 'tr', 'th', 'td',
     'a',
-    'div', 'span',
+    'div', 'span', 'button',
   ],
-  ALLOWED_ATTR: ['href', 'class', 'title', 'target', 'rel'],
+  ALLOWED_ATTR: ['href', 'class', 'title', 'target', 'rel', 'type', 'data-action-text'],
 };
 
 export function inlineFormat(str) {

@@ -4129,3 +4129,151 @@ select.pbe-input { cursor: pointer; }
   color: var(--text-muted);
   border: 1px solid var(--border);
 }
+
+/* Action marker pills (clickable buttons in agent messages) */
+.md-action-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  margin: 2px 4px;
+  background: rgba(0, 200, 100, 0.08);
+  border: 1px solid rgba(0, 200, 100, 0.4);
+  border-radius: 999px;
+  color: rgba(0, 200, 100, 0.95);
+  font-family: inherit;
+  font-size: 0.9em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  vertical-align: middle;
+}
+
+.md-action-marker:hover {
+  background: rgba(0, 200, 100, 0.18);
+  border-color: rgba(0, 200, 100, 0.7);
+  transform: translateY(-1px);
+}
+
+.md-action-marker:active {
+  transform: translateY(0);
+}
+
+/* Action confirmation modal */
+.action-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.action-modal-content {
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 0;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.action-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 1.1em;
+  font-weight: 600;
+  color: rgba(0, 200, 100, 0.95);
+}
+
+.action-modal-body {
+  padding: 20px;
+}
+
+.action-modal-label {
+  font-size: 0.85em;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 8px;
+}
+
+.action-modal-text {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 0.95em;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.action-modal-server {
+  font-size: 0.85em;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.action-modal-actions {
+  display: flex;
+  gap: 8px;
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  justify-content: flex-end;
+}
+
+.action-modal-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-size: 0.9em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.action-modal-btn-cancel {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.action-modal-btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.action-modal-btn-edit {
+  background: rgba(255, 200, 0, 0.1);
+  border-color: rgba(255, 200, 0, 0.4);
+  color: rgba(255, 200, 0, 0.95);
+}
+
+.action-modal-btn-edit:hover {
+  background: rgba(255, 200, 0, 0.2);
+  border-color: rgba(255, 200, 0, 0.7);
+}
+
+.action-modal-btn-send {
+  background: rgba(0, 200, 100, 0.15);
+  border-color: rgba(0, 200, 100, 0.5);
+  color: rgba(0, 200, 100, 0.95);
+}
+
+.action-modal-btn-send:hover {
+  background: rgba(0, 200, 100, 0.25);
+  border-color: rgba(0, 200, 100, 0.8);
+}
