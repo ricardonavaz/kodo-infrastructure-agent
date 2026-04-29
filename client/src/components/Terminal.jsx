@@ -197,7 +197,12 @@ export default function Terminal({ connection, connectionStatus, connectionLogs,
           setMessages((prev) => [...prev, {
             role: 'assistant',
             content: event.data.response,
-            blocks: event.data.blocks || null,
+            // FIX C (B3.4): Forzar blocks=null en done para consistencia con history.
+            // El server emite blocks pero getHistory NO los persiste, causando
+            // bifurcacion de render que suprime pills y botones verdes.
+            // WORKAROUND TEMPORAL hasta Bloque 4 (P2 expandido, 50-70h) que completara
+            // el path bloques correctamente. Ver IDEA #11 en inbox.
+            blocks: null,
             tags: event.data.tags || [],
             metrics: event.data.metrics,
           }]);
@@ -454,6 +459,9 @@ export default function Terminal({ connection, connectionStatus, connectionLogs,
                   content={msg.content}
                   onAction={(action, value) => handleSuggestionClick(value || action)}
                   connectionId={connection?.id}
+                  serverName={connection?.name}
+                  onActionEdit={setInput}
+                  onActionSend={handleSuggestionClick}
                 />
                 {suggestedActions.length > 0 && !msg.blocks && (
                   <div className="suggested-actions">
