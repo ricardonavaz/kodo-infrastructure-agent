@@ -1,4 +1,43 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { formatMessage } from '../utils/formatMessage.jsx';
+
+function stripMarkdown(text) {
+  if (!text) return '';
+  return String(text)
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/_([^_]+)_/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/```[\s\S]*?```/g, '[codigo]')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/^>\s+/gm, '')
+    .replace(/^[-*+]\s+/gm, '')
+    .replace(/^\d+\.\s+/gm, '')
+    .replace(/\|/g, ' ')
+    .replace(/[-]{3,}/g, '')
+    .replace(/\n+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const MARKDOWN_TYPES = ['thinking', 'ai_text', 'ai_response'];
+const SHELL_TYPES = ['command_result', 'command_error'];
+const CRITICAL_TYPES = ['ai_response', 'command_result', 'command_error', 'error'];
+const RUTINARY_TYPES = ['thinking', 'ai_thinking_done', 'metrics'];
+
+function getEventCategory(type) {
+  if (MARKDOWN_TYPES.includes(type)) return 'markdown';
+  if (SHELL_TYPES.includes(type)) return 'shell';
+  return 'structure';
+}
+
+function getEventImportance(type) {
+  if (CRITICAL_TYPES.includes(type)) return 'critical';
+  if (RUTINARY_TYPES.includes(type)) return 'rutinary';
+  return 'normal';
+}
 
 const EVENT_CONFIG = {
   thinking: { icon: '◐', label: 'AI', className: 'evt-thinking' },
@@ -15,15 +54,20 @@ const EVENT_CONFIG = {
   reconnecting: { icon: '↻', label: 'Reconectando', className: 'evt-reconnecting' },
 };
 
+function truncatePreview(text, max) {
+  const clean = stripMarkdown(text);
+  return clean.length > max ? clean.substring(0, max) + '...' : clean;
+}
+
 function formatEventContent(event) {
   const { type, data } = event;
   switch (type) {
     case 'thinking':
-      return data.message || 'Procesando...';
+      return truncatePreview(data.message || 'Procesando...', 100);
     case 'ai_thinking_done':
       return `Llamada #${data.apiCall} completada (${data.responseTimeMs}ms, ${data.inputTokens}↑ ${data.outputTokens}↓)`;
     case 'ai_text':
-      return data.text?.substring(0, 100) + (data.text?.length > 100 ? '...' : '');
+      return truncatePreview(data.text || '', 100);
     case 'tool_use':
       return `${data.command}${data.isDestructive ? ' ⚠️ DESTRUCTIVO' : ''}`;
     case 'executing':
@@ -33,7 +77,7 @@ function formatEventContent(event) {
     case 'command_error':
       return data.error;
     case 'ai_response':
-      return data.text?.substring(0, 150) + (data.text?.length > 150 ? '...' : '');
+      return truncatePreview(data.text || '', 150);
     case 'metrics':
       return `${data.model?.split('-').slice(1, 3).join(' ')} | ${data.inputTokens}↑ ${data.outputTokens}↓ | ${(data.totalLatencyMs / 1000).toFixed(1)}s | $${data.estimatedCost}`;
     case 'done':
@@ -57,8 +101,17 @@ function ExpandedContent({ event }) {
       </div>
     );
   }
-  if (type === 'ai_response' && data.text) {
-    return <div className="evt-expanded"><pre className="evt-stdout">{data.text}</pre></div>;
+  if (MARKDOWN_TYPES.includes(type)) {
+    const text = data.text || data.message || '';
+    if (!text) return null;
+    return (
+      <div className="evt-expanded">
+        <div
+          className="evt-rendered"
+          dangerouslySetInnerHTML={{ __html: formatMessage(text) }}
+        />
+      </div>
+    );
   }
   return null;
 }
@@ -105,6 +158,8 @@ export default function ExecutionPanel({ liveEvents, executions, activeTab, onTa
           )}
           {liveEvents?.map((event, i) => {
             const config = EVENT_CONFIG[event.type] || { icon: '?', label: event.type, className: '' };
+            const importance = getEventImportance(event.type);
+            const category = getEventCategory(event.type);
             const isLast = i === liveEvents.length - 1;
             const isActive = isLast && isProcessing && (event.type === 'thinking' || event.type === 'executing');
             const isExpanded = expandedIdx === i;
@@ -112,7 +167,7 @@ export default function ExecutionPanel({ liveEvents, executions, activeTab, onTa
             return (
               <div
                 key={i}
-                className={`live-event ${config.className} ${isActive ? 'active' : ''} ${event.replayed ? 'replayed' : ''}`}
+                className={`live-event ${config.className} evt-${importance} evt-cat-${category} ${isActive ? 'active' : ''} ${event.replayed ? 'replayed' : ''}`}
                 onClick={() => setExpandedIdx(isExpanded ? null : i)}
               >
                 <div className="live-event-header">
