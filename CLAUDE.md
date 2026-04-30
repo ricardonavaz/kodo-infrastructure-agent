@@ -27,7 +27,7 @@ actual del sprint en curso antes de proponer trabajo.
 | --- | --------------------------------------------------- | ----------------- | ------------ |
 | 1   | P7.1 — Bug cross-server feed contamination          | 2-4h              | COMPLETO     |
 | 2   | Decision-Rendering (Camino A) sesion tecnica        | 1h                | COMPLETO     |
-| 3   | Sprint rendering markdown unificado                 | 12-21h (1 sem)    | EN CURSO 6/7 |
+| 3   | Sprint rendering markdown unificado                 | 12-21h (1 sem)    | COMPLETO     |
 | 4   | P2 expandido completo                               | 50-70h (3 sem)    | PENDIENTE    |
 | 5   | P1 — Sesion Operativa                               | 15-25h (1.5 sem)  | PENDIENTE    |
 | 6   | P6 — Comportamiento Agentico + Modo Didactico       | 30-50h (2 sem)    | PENDIENTE    |
@@ -47,7 +47,7 @@ actual del sprint en curso antes de proponer trabajo.
 | B3.4     | ACTION pills + modal + Fix C               | COMPLETO  | 5efc2b0 |
 | B3.5     | Refactor sistemico ExecutionPanel          | COMPLETO  | 5f611c5 |
 | B3.6     | Verificacion visual                        | COMPLETO  | (cubierto durante sprint) |
-| B3.7     | Documentacion de cierre del sprint         | PENDIENTE | -       |
+| B3.7     | Documentacion de cierre del sprint         | COMPLETO  | 34c9036 |
 
 ## Inbox estrategico
 
